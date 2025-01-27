@@ -1,0 +1,3 @@
+# Default configuration for Craftalism
+economy:
+  default-balance: 10000.0
