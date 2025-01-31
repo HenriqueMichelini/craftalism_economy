@@ -1,10 +1,10 @@
-package io.github.HenriqueMichelini.craftalism;
+package io.github.HenriqueMichelini.craftalism_economy;
 
-import io.github.HenriqueMichelini.craftalism.economy.*;
-import io.github.HenriqueMichelini.craftalism.economy.command.BalanceCommand;
-import io.github.HenriqueMichelini.craftalism.economy.command.BaltopCommand;
-import io.github.HenriqueMichelini.craftalism.economy.command.PayCommand;
-import io.github.HenriqueMichelini.craftalism.economy.command.SetBalanceCommand;
+import io.github.HenriqueMichelini.craftalism_economy.economy.*;
+import io.github.HenriqueMichelini.craftalism_economy.economy.command.BalanceCommand;
+import io.github.HenriqueMichelini.craftalism_economy.economy.command.BaltopCommand;
+import io.github.HenriqueMichelini.craftalism_economy.economy.command.PayCommand;
+import io.github.HenriqueMichelini.craftalism_economy.economy.command.SetBalanceCommand;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 

@@ -1,6 +1,6 @@
 name: Craftalism
 version: 1.0
-main: io.github.HenriqueMichelini.craftalism.CraftalismEconomy
+main: io.github.HenriqueMichelini.craftalism_economy.CraftalismEconomy
 api-version: 1.21
 commands:
   pay:

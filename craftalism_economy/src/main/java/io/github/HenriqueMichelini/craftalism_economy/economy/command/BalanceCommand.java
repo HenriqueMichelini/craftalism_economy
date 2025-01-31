@@ -1,6 +1,6 @@
-package io.github.HenriqueMichelini.craftalism.economy.command;
+package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
-import io.github.HenriqueMichelini.craftalism.economy.EconomyManager;
+import io.github.HenriqueMichelini.craftalism_economy.economy.EconomyManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
