@@ -11,6 +11,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
@@ -35,23 +36,23 @@ public class BaltopCommand implements CommandExecutor {
         DecimalFormat formatter = new DecimalFormat("#,##0.00", symbols);
 
         // Retrieve all balances and sort them in descending order
-        Map<UUID, Double> balances = economyManager.getAllBalances();
-        List<Map.Entry<UUID, Double>> topBalances = balances.entrySet().stream()
-                .sorted((a, b) -> Double.compare(b.getValue(), a.getValue())) // Sort by balance (descending)
+        Map<UUID, BigDecimal> balances = economyManager.getAllBalances();
+        List<Map.Entry<UUID, BigDecimal>> topBalances = balances.entrySet().stream()
+                .sorted((a, b) -> b.getValue().compareTo(a.getValue())) // Sort by balance (descending)
                 .limit(10) // Limit to top 10
                 .toList();
 
         // Display the top balances
         player.sendMessage(
                 Component.text("Top 10 Richest Players:")
-                        .color(TextColor.color(NamedTextColor.GOLD )) // Gold
+                        .color(TextColor.color(NamedTextColor.GOLD)) // Gold
                         .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD)
         );
 
         int rank = 1;
-        for (Map.Entry<UUID, Double> entry : topBalances) {
+        for (Map.Entry<UUID, BigDecimal> entry : topBalances) {
             UUID uuid = entry.getKey();
-            double balance = entry.getValue();
+            BigDecimal balance = entry.getValue();
             String playerName = Bukkit.getOfflinePlayer(uuid).getName(); // Retrieve the player's name
 
             player.sendMessage(
@@ -59,7 +60,7 @@ public class BaltopCommand implements CommandExecutor {
                             .color(TextColor.color(NamedTextColor.YELLOW)) // Yellow
                             .append(Component.text(playerName != null ? playerName : "Unknown").color(TextColor.color(NamedTextColor.GREEN))) // Green for name
                             .append(Component.text(" - ").color(NamedTextColor.WHITE))
-                            .append(Component.text("$" + String.format("%.2f", balance)).color(TextColor.color(NamedTextColor.AQUA))) // Aqua for balance
+                            .append(Component.text("$" + formatter.format(balance)).color(TextColor.color(NamedTextColor.AQUA))) // Aqua for balance
             );
             rank++;
         }

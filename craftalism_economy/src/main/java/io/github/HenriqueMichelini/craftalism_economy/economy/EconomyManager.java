@@ -6,6 +6,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -13,7 +15,7 @@ import java.util.UUID;
 public class EconomyManager {
     private final File balancesFile;
     private final FileConfiguration balancesConfig;
-    private final HashMap<UUID, Double> balances = new HashMap<>(); // Initialize the balances map
+    private final HashMap<UUID, BigDecimal> balances = new HashMap<>(); // Use BigDecimal for balances
     private final JavaPlugin plugin; // Reference to the plugin
 
     public EconomyManager(JavaPlugin plugin) {
@@ -30,7 +32,7 @@ public class EconomyManager {
 
         for (String key : balancesConfig.getKeys(false)) {
             UUID playerUUID = UUID.fromString(key);
-            double balance = balancesConfig.getDouble(key);
+            BigDecimal balance = BigDecimal.valueOf(balancesConfig.getDouble(key));
             setBalance(playerUUID, balance);
         }
 
@@ -40,7 +42,7 @@ public class EconomyManager {
     // Save balances to balances.yml
     public void saveBalances() {
         for (UUID uuid : balances.keySet()) {
-            balancesConfig.set(uuid.toString(), getBalance(uuid));
+            balancesConfig.set(uuid.toString(), getBalance(uuid).doubleValue());
         }
 
         try {
@@ -52,29 +54,25 @@ public class EconomyManager {
     }
 
     // Get balance
-    public double getBalance(UUID playerUUID) {
-        return balances.getOrDefault(playerUUID, 0.0);
+    public BigDecimal getBalance(UUID playerUUID) {
+        return balances.getOrDefault(playerUUID, BigDecimal.ZERO);
     }
 
-    public void setBalance(UUID playerUUID, double amount) {
-        balances.put(playerUUID, roundToTwoDecimalPlaces(Math.max(amount, 0.0))); // Prevent negative balances
-    }
-
-    private double roundToTwoDecimalPlaces(double value) {
-        return Math.round(value * 100.0) / 100.0; // Rounds to 2 decimal places
+    public void setBalance(UUID playerUUID, BigDecimal amount) {
+        balances.put(playerUUID, amount.setScale(2, RoundingMode.HALF_UP)); // Round to 2 decimal places
     }
 
     // Transfer balance
-    public void transferBalance(UUID from, UUID to, double amount) {
-        if (amount <= 0 || getBalance(from) < amount) {
+    public void transferBalance(UUID from, UUID to, BigDecimal amount) {
+        if (amount.compareTo(BigDecimal.ZERO) <= 0 || getBalance(from).compareTo(amount) < 0) {
             return;
         }
 
-        setBalance(from, getBalance(from) - amount);
-        setBalance(to, getBalance(to) + amount);
+        setBalance(from, getBalance(from).subtract(amount));
+        setBalance(to, getBalance(to).add(amount));
     }
 
-    public Map<UUID, Double> getAllBalances() {
+    public Map<UUID, BigDecimal> getAllBalances() {
         return new HashMap<>(balances); // Return a copy of the balances map
     }
 }

@@ -11,6 +11,8 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
@@ -37,9 +39,17 @@ public class SetBalanceCommand implements CommandExecutor {
             return true;
         }
 
+        BigDecimal amount;
         try {
-            double amount = Double.parseDouble(args[1]);
-            if (amount < 0) {
+            amount = new BigDecimal(args[1]);
+
+            if (amount.scale() > 2) {
+                commandSender.sendMessage(Component.text("You can only pay amounts with up to 2 decimal places.")
+                        .color(TextColor.color(NamedTextColor.RED))); // Red
+                return true;
+            }
+
+            if (amount.compareTo(BigDecimal.ZERO) < 0) {
                 commandSender.sendMessage(Component.text("Balance cannot be negative.").color(TextColor.color(NamedTextColor.RED))); // Red
                 return true;
             }
@@ -75,12 +85,12 @@ public class SetBalanceCommand implements CommandExecutor {
         return true;
     }
 
-    private String formatAmount(double amount) {
+    private String formatAmount(BigDecimal amount) {
         // Create a DecimalFormat to format the amount with commas and two decimal places
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
         symbols.setGroupingSeparator('.');
         symbols.setDecimalSeparator(',');
         DecimalFormat formatter = new DecimalFormat("#,##0.00", symbols);
-        return formatter.format(amount);
+        return formatter.format(amount.setScale(2, RoundingMode.HALF_UP));
     }
 }

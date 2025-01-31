@@ -11,6 +11,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
@@ -25,56 +27,56 @@ public class PayCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
-        if (!(commandSender instanceof Player payer)) {
+        if (!(commandSender instanceof Player player)) {
             commandSender.sendMessage(Component.text("Only players can use this command.").color(TextColor.color(NamedTextColor.RED))); // Red
             return true;
         }
 
         if (args.length != 2) {
-            payer.sendMessage(Component.text("Usage: /pay <player> <amount>").color(TextColor.color(NamedTextColor.RED))); // Red
+            player.sendMessage(Component.text("Usage: /pay <player> <amount>").color(TextColor.color(NamedTextColor.RED))); // Red
             return true;
         }
 
         Player payee = Bukkit.getPlayer(args[0]);
         if (payee == null || !payee.isOnline()) {
-            payer.sendMessage(Component.text("Player not found or offline.").color(TextColor.color(NamedTextColor.RED))); // Red
+            player.sendMessage(Component.text("Player not found or offline.").color(TextColor.color(NamedTextColor.RED))); // Red
             return true;
         }
 
-        if (payer.getUniqueId().equals(payee.getUniqueId())) {
-            payer.sendMessage(Component.text("You cannot pay yourself.").color(TextColor.color(NamedTextColor.RED))); // Red
+        if (player.getUniqueId().equals(payee.getUniqueId())) {
+            player.sendMessage(Component.text("You cannot pay yourself.").color(TextColor.color(NamedTextColor.RED))); // Red
             return true;
         }
 
         // Parse the amount and validate decimal places
-        double amount;
+        BigDecimal amount;
         try {
-            amount = Double.parseDouble(args[1]);
+            amount = new BigDecimal(args[1]);
 
             // Block amounts with more than 2 decimal places
-            if (!isValidDecimalPlaces(amount)) {
-                payer.sendMessage(Component.text("You can only pay amounts with up to 2 decimal places.")
+            if (amount.scale() > 2) {
+                player.sendMessage(Component.text("You can only pay amounts with up to 2 decimal places.")
                         .color(TextColor.color(NamedTextColor.RED))); // Red
                 return true;
             }
 
-            if (amount <= 0) {
-                payer.sendMessage(Component.text("The amount must be greater than zero.")
+            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+                player.sendMessage(Component.text("The amount must be greater than zero.")
                         .color(TextColor.color(NamedTextColor.RED))); // Red
                 return true;
             }
 
         } catch (NumberFormatException e) {
-            payer.sendMessage(Component.text("Invalid amount. Please enter a valid number.")
+            player.sendMessage(Component.text("Invalid amount. Please enter a valid number.")
                     .color(TextColor.color(NamedTextColor.RED))); // Red
             return true;
         }
 
-        UUID payerUUID = payer.getUniqueId();
+        UUID payerUUID = player.getUniqueId();
         UUID payeeUUID = payee.getUniqueId();
 
-        if (economyManager.getBalance(payerUUID) < amount) {
-            payer.sendMessage(Component.text("You don't have enough money.")
+        if (economyManager.getBalance(payerUUID).compareTo(amount) < 0) {
+            player.sendMessage(Component.text("You don't have enough money.")
                     .color(TextColor.color(NamedTextColor.RED))); // Red
             return true;
         }
@@ -86,7 +88,7 @@ public class PayCommand implements CommandExecutor {
         economyManager.transferBalance(payerUUID, payeeUUID, amount);
 
         // Message to the payer
-        payer.sendMessage(
+        player.sendMessage(
                 Component.text("You paid ")
                         .color(TextColor.color(NamedTextColor.GREEN)) // Green
                         .append(Component.text(payee.getName()).color(TextColor.color(NamedTextColor.WHITE))) // White
@@ -100,23 +102,18 @@ public class PayCommand implements CommandExecutor {
                         .color(TextColor.color(NamedTextColor.GREEN)) // Green
                         .append(Component.text(formattedAmount).color(TextColor.color(NamedTextColor.WHITE))) // White
                         .append(Component.text(" from ").color(TextColor.color(NamedTextColor.GREEN))) // Green
-                        .append(Component.text(payer.getName()).color(TextColor.color(NamedTextColor.WHITE))) // White
+                        .append(Component.text(player.getName()).color(TextColor.color(NamedTextColor.WHITE))) // White
         );
 
         return true;
     }
 
-    private boolean isValidDecimalPlaces(double value) {
-        String valueString = String.valueOf(value);
-        return valueString.matches("^\\d+(\\.\\d{1,2})?$"); // Matches up to 2 decimal places
-    }
-
-    private String formatAmount(double amount) {
+    private String formatAmount(BigDecimal amount) {
         // Create a DecimalFormat to format the amount with commas and two decimal places
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
         symbols.setGroupingSeparator('.');
         symbols.setDecimalSeparator(',');
         DecimalFormat formatter = new DecimalFormat("#,##0.00", symbols);
-        return formatter.format(amount);
+        return formatter.format(amount.setScale(2, RoundingMode.HALF_UP));
     }
 }

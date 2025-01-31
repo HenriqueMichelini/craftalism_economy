@@ -11,6 +11,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
@@ -38,7 +39,7 @@ public class BalanceCommand implements CommandExecutor {
 
         if (args.length == 0) {
             // Show the player's own balance
-            double balance = economyManager.getBalance(player.getUniqueId());
+            BigDecimal balance = economyManager.getBalance(player.getUniqueId());
             player.sendMessage(
                     Component.text("Your balance is: ")
                             .color(NamedTextColor.GREEN) // Green for the prefix
@@ -55,7 +56,7 @@ public class BalanceCommand implements CommandExecutor {
                 return true;
             }
 
-            double targetBalance = economyManager.getBalance(target.getUniqueId());
+            BigDecimal targetBalance = economyManager.getBalance(target.getUniqueId());
             player.sendMessage(
                     Component.text(target.getName() + "'s balance is: ")
                             .color(NamedTextColor.GREEN) // Green for the prefix
