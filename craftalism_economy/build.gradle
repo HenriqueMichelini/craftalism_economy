@@ -48,3 +48,7 @@ processResources {
     }
     from(sourceSets.main.resources)
 }
+
+tasks.jar {
+    archiveFileName = "craftalism_economy-1.0-SNAPSHOT.jar" // Set the output JAR file name
+}
