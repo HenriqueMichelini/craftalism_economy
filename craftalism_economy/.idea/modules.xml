@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/Craftalism.main.iml" filepath="$PROJECT_DIR$/.idea/modules/Craftalism.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/io.github.HenriqueMichelini.Craftalism.main.iml" filepath="$PROJECT_DIR$/.idea/modules/io.github.HenriqueMichelini.Craftalism.main.iml" />
     </modules>
   </component>
 </project>

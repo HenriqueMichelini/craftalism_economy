@@ -44,7 +44,7 @@ public class BaltopCommand implements CommandExecutor {
         // Display the top balances
         player.sendMessage(
                 Component.text("Top 10 Richest Players:")
-                        .color(TextColor.color(NamedTextColor.GOLD)) // Gold
+                        .color(TextColor.color(NamedTextColor.GOLD )) // Gold
                         .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD)
         );
 

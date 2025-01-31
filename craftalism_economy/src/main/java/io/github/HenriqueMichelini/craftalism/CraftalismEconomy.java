@@ -10,7 +10,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Objects;
 
-public final class Craftalism extends JavaPlugin {
+public final class CraftalismEconomy extends JavaPlugin {
 
     private EconomyManager economyManager;
 
