@@ -16,8 +16,8 @@ public final class CraftalismEconomy extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        EconomyManager economyManager = new EconomyManager(this);
-        economyManager.loadBalances();
+        this.economyManager = new EconomyManager(this); // Initialize class field
+        this.economyManager.loadBalances();
 
         Objects.requireNonNull(getCommand("pay")).setExecutor(new PayCommand(economyManager));
         Objects.requireNonNull(getCommand("balance")).setExecutor(new BalanceCommand(economyManager));
@@ -27,15 +27,14 @@ public final class CraftalismEconomy extends JavaPlugin {
         // Save balances on disable
         getServer().getPluginManager().registerEvents(new Listener() {}, this);
 
-        getLogger().info("[Craftalism] Plugin enabled!");
+        getLogger().info("[Craftalism Economy] Plugin enabled!");
     }
 
     @Override
     public void onDisable() {
-        // Ensure economyManager is not null before saving balances
-        if (economyManager != null) {
-            economyManager.saveBalances();
+        if (this.economyManager != null) {
+            this.economyManager.saveBalances();
         }
-        getLogger().info("[Craftalism] Plugin disabled!");
+        getLogger().info("[Craftalism Economy] Plugin disabled!");
     }
 }
