@@ -1,8 +1,11 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy;
 
+import io.github.HenriqueMichelini.craftalism_economy.CraftalismEconomy;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -45,13 +48,18 @@ public class EconomyManager {
 
     public void loadBalances() {
         try {
-            balancesConfig.load(balancesFile); // Reload to get latest changes
+            balancesConfig.load(balancesFile);
             ConfigurationSection balancesSection = balancesConfig.getConfigurationSection("balances");
+
+            // Clear existing balances before loading
+            balances.clear();
+
             if (balancesSection != null) {
                 for (String key : balancesSection.getKeys(false)) {
                     try {
                         UUID uuid = UUID.fromString(key);
-                        BigDecimal balance = BigDecimal.valueOf(balancesSection.getDouble(key));
+                        BigDecimal balance = BigDecimal.valueOf(balancesSection.getDouble(key))
+                                .setScale(2, RoundingMode.HALF_UP);
                         balances.put(uuid, balance);
                     } catch (IllegalArgumentException e) {
                         plugin.getLogger().warning("Invalid UUID: " + key);
@@ -66,13 +74,13 @@ public class EconomyManager {
 
     public void saveBalances() {
         try {
-            // Clear existing balances
-            balancesConfig.set("balances", null);
+            balancesConfig.set("balances", null);  // Clear existing data
 
-            // Create new balances section
+            // Create new balances section with proper decimal formatting
             ConfigurationSection balancesSection = balancesConfig.createSection("balances");
             for (Map.Entry<UUID, BigDecimal> entry : balances.entrySet()) {
-                balancesSection.set(entry.getKey().toString(), entry.getValue().doubleValue());
+                balancesSection.set(entry.getKey().toString(),
+                        entry.getValue().setScale(2, RoundingMode.HALF_UP));
             }
 
             balancesConfig.save(balancesFile);
@@ -81,6 +89,7 @@ public class EconomyManager {
             plugin.getLogger().severe("[Economy] Failed to save balances: " + e.getMessage());
         }
     }
+
 
     // Get balance
     public BigDecimal getBalance(UUID playerUUID) {
@@ -129,5 +138,21 @@ public class EconomyManager {
     // Get all balances
     public Map<UUID, BigDecimal> getAllBalances() {
         return new HashMap<>(balances); // Return a copy of the balances map
+    }
+
+    public EconomyManager getEconomyManager() {
+        Plugin economyPlugin = Bukkit.getPluginManager().getPlugin("CraftalismEconomy");
+
+        if (economyPlugin == null) {
+            System.out.println("Economy plugin not found!");
+            return null;
+        }
+
+        if (!(economyPlugin instanceof CraftalismEconomy)) {
+            System.out.println("Found plugin but wrong type: " + economyPlugin.getClass().getName());
+            return null;
+        }
+
+        return ((CraftalismEconomy) economyPlugin).getEconomyManager();
     }
 }
