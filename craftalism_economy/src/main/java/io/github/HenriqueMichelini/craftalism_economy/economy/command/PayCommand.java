@@ -1,6 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
 import io.github.HenriqueMichelini.craftalism_economy.economy.EconomyManager;
+import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -12,10 +13,6 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
 import java.util.UUID;
 
 public class PayCommand implements CommandExecutor {
@@ -81,18 +78,16 @@ public class PayCommand implements CommandExecutor {
             return true;
         }
 
-        // Format the amount with thousands separators and two decimal places
-        String formattedAmount = formatAmount(amount);
-
         // Perform the transfer
         economyManager.transferBalance(payerUUID, payeeUUID, amount);
+        MoneyFormat moneyFormat = new MoneyFormat();
+        String formattedAmount = moneyFormat.formatPrice(amount);
 
         // Message to the payer
         player.sendMessage(
                 Component.text("You paid ")
                         .color(TextColor.color(NamedTextColor.GREEN)) // Green
                         .append(Component.text(payee.getName()).color(TextColor.color(NamedTextColor.WHITE))) // White
-                        .append(Component.text(" $").color(TextColor.color(NamedTextColor.GREEN))) // Green
                         .append(Component.text(formattedAmount).color(TextColor.color(NamedTextColor.WHITE))) // White
         );
 
@@ -106,14 +101,5 @@ public class PayCommand implements CommandExecutor {
         );
 
         return true;
-    }
-
-    private String formatAmount(BigDecimal amount) {
-        // Create a DecimalFormat to format the amount with commas and two decimal places
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
-        symbols.setGroupingSeparator('.');
-        symbols.setDecimalSeparator(',');
-        DecimalFormat formatter = new DecimalFormat("#,##0.00", symbols);
-        return formatter.format(amount.setScale(2, RoundingMode.HALF_UP));
     }
 }

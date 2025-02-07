@@ -1,6 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
 import io.github.HenriqueMichelini.craftalism_economy.economy.EconomyManager;
+import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -12,9 +13,6 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
 
 public class BalanceCommand implements CommandExecutor {
 
@@ -31,20 +29,18 @@ public class BalanceCommand implements CommandExecutor {
             return true;
         }
 
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
-        symbols.setGroupingSeparator('.');
-        symbols.setDecimalSeparator(',');
-        DecimalFormat formatter = new DecimalFormat("#,##0.00", symbols);
-
+        MoneyFormat moneyFormat = new MoneyFormat();
+        String formattedBalance;
 
         if (args.length == 0) {
             // Show the player's own balance
             BigDecimal balance = economyManager.getBalance(player.getUniqueId());
+            formattedBalance = moneyFormat.formatPrice(balance);
             player.sendMessage(
                     Component.text("Your balance is: ")
                             .color(NamedTextColor.GREEN) // Green for the prefix
                             .append(
-                                    Component.text("$" + String.format("%.2f", balance))
+                                    Component.text(formattedBalance)
                                             .color(TextColor.color(NamedTextColor.GREEN)) // Light green for the balance
                             )
             );
@@ -57,11 +53,12 @@ public class BalanceCommand implements CommandExecutor {
             }
 
             BigDecimal targetBalance = economyManager.getBalance(target.getUniqueId());
+            formattedBalance = moneyFormat.formatPrice(targetBalance);
             player.sendMessage(
                     Component.text(target.getName() + "'s balance is: ")
                             .color(NamedTextColor.GREEN) // Green for the prefix
                             .append(
-                                    Component.text("$" + String.format("%.2f", targetBalance))
+                                    Component.text(formattedBalance)
                                             .color(TextColor.color(NamedTextColor.GREEN)) // Light green for the balance
                             )
             );

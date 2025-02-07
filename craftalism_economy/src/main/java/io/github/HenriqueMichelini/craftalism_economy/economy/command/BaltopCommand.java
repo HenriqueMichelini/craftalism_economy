@@ -1,6 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
 import io.github.HenriqueMichelini.craftalism_economy.economy.EconomyManager;
+import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -49,10 +50,14 @@ public class BaltopCommand implements CommandExecutor {
                         .decorate(net.kyori.adventure.text.format.TextDecoration.BOLD)
         );
 
+        MoneyFormat moneyFormat = new MoneyFormat();
+        String formattedbalance;
+
         int rank = 1;
         for (Map.Entry<UUID, BigDecimal> entry : topBalances) {
             UUID uuid = entry.getKey();
             BigDecimal balance = entry.getValue();
+            formattedbalance = moneyFormat.formatPrice(balance);
             String playerName = Bukkit.getOfflinePlayer(uuid).getName(); // Retrieve the player's name
 
             player.sendMessage(
@@ -60,7 +65,7 @@ public class BaltopCommand implements CommandExecutor {
                             .color(TextColor.color(NamedTextColor.YELLOW)) // Yellow
                             .append(Component.text(playerName != null ? playerName : "Unknown").color(TextColor.color(NamedTextColor.GREEN))) // Green for name
                             .append(Component.text(" - ").color(NamedTextColor.WHITE))
-                            .append(Component.text("$" + formatter.format(balance)).color(TextColor.color(NamedTextColor.AQUA))) // Aqua for balance
+                            .append(Component.text(formattedbalance).color(TextColor.color(NamedTextColor.AQUA))) // Aqua for balance
             );
             rank++;
         }

@@ -1,6 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
 import io.github.HenriqueMichelini.craftalism_economy.economy.EconomyManager;
+import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -12,10 +13,6 @@ import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
 import java.util.Objects;
 
 public class SetBalanceCommand implements CommandExecutor {
@@ -54,17 +51,16 @@ public class SetBalanceCommand implements CommandExecutor {
                 return true;
             }
 
-            // Format the amount with thousands separators and two decimal places
-            String formattedAmount = formatAmount(amount);
-
             economyManager.setBalance(target.getUniqueId(), amount);
+            MoneyFormat moneyFormat = new MoneyFormat();
+            String formattedAmount = moneyFormat.formatPrice(amount);
 
             // Message to the command sender
             commandSender.sendMessage(
                     Component.text("Set ")
                             .color(TextColor.color(NamedTextColor.GREEN)) // Green
                             .append(Component.text(Objects.requireNonNull(target.getName())).color(TextColor.color(NamedTextColor.WHITE))) // White
-                            .append(Component.text("'s balance to $").color(TextColor.color(NamedTextColor.GREEN))) // Green
+                            .append(Component.text("'s balance to ").color(TextColor.color(NamedTextColor.GREEN))) // Green
                             .append(Component.text(formattedAmount).color(TextColor.color(NamedTextColor.WHITE))) // White
                             .append(Component.text(".").color(TextColor.color(NamedTextColor.GREEN))) // Green
             );
@@ -72,7 +68,7 @@ public class SetBalanceCommand implements CommandExecutor {
             // Notify the player if online
             if (target.isOnline()) {
                 Objects.requireNonNull(target.getPlayer()).sendMessage(
-                        Component.text("Your balance has been set to $")
+                        Component.text("Your balance has been set to ")
                                 .color(TextColor.color(NamedTextColor.GREEN)) // Green
                                 .append(Component.text(formattedAmount).color(TextColor.color(NamedTextColor.WHITE))) // White
                                 .append(Component.text(".").color(TextColor.color(NamedTextColor.GREEN))) // Green
@@ -83,14 +79,5 @@ public class SetBalanceCommand implements CommandExecutor {
         }
 
         return true;
-    }
-
-    private String formatAmount(BigDecimal amount) {
-        // Create a DecimalFormat to format the amount with commas and two decimal places
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
-        symbols.setGroupingSeparator('.');
-        symbols.setDecimalSeparator(',');
-        DecimalFormat formatter = new DecimalFormat("#,##0.00", symbols);
-        return formatter.format(amount.setScale(2, RoundingMode.HALF_UP));
     }
 }
