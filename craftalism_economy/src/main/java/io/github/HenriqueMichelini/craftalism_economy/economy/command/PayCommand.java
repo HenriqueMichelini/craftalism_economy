@@ -6,6 +6,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -15,7 +16,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 public class PayCommand implements CommandExecutor {
     private static final NamedTextColor ERROR_COLOR = NamedTextColor.RED;
@@ -41,20 +44,22 @@ public class PayCommand implements CommandExecutor {
 
         if (!validateArguments(payer, args)) return true;
 
-        Optional<Player> payeeOpt = resolvePayee(payer, args[0]);
-        if (payeeOpt.isEmpty()) return true;
-        Player payee = payeeOpt.get();
+        Optional<UUID> payeeUuid = resolvePayeeUuid(args[0]);
+        if (payeeUuid.isEmpty()) {
+            payer.sendMessage(errorComponent("Player not found in system."));
+            return true;
+        }
 
-        if (!validatePayment(payer, payee)) return true;
+        if (!validatePayment(payer.getUniqueId(), payeeUuid.get())) return true;
 
         Optional<BigDecimal> amountOpt = parseAmount(payer, args[1]);
         if (amountOpt.isEmpty()) return true;
         BigDecimal amount = amountOpt.get();
 
-        if (!processPayment(payer, payee, amount)) return true;
+        if (!processPayment(payer.getUniqueId(), payeeUuid.get(), amount)) return true;
 
-        sendSuccessMessages(payer, payee, amount);
-        logTransaction(payer, payee, amount);
+        sendSuccessMessages(payer, payeeUuid.get(), amount);
+        logTransaction(payer, payeeUuid.get(), amount);
         return true;
     }
 
@@ -70,19 +75,39 @@ public class PayCommand implements CommandExecutor {
         return false;
     }
 
-    private Optional<Player> resolvePayee(Player payer, String username) {
-        Player payee = Bukkit.getPlayer(username);
-        if (payee != null) return Optional.of(payee);
+    private Optional<UUID> resolvePayeeUuid(String name) {
+        // 1. Check exact name match in existing balances
+        Optional<UUID> balanceMatch = economyManager.getAllBalances().keySet().stream()
+                .filter(bigDecimal -> {
+                    OfflinePlayer player = Bukkit.getOfflinePlayer(bigDecimal);
+                    return player.getName() != null && player.getName().equalsIgnoreCase(name);
+                })
+                .findFirst();
 
-        payer.sendMessage(errorComponent("Player not found"));
+        if (balanceMatch.isPresent()) {
+            return balanceMatch;
+        }
+
+        // 2. Check Bukkit's offline players
+        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
+        if (offlinePlayer.hasPlayedBefore() || offlinePlayer.isOnline()) {
+            return Optional.of(offlinePlayer.getUniqueId());
+        }
+
+        // 3. Final check in economy system
+        if (economyManager.getAllBalances().containsKey(offlinePlayer.getUniqueId())) {
+            return Optional.of(offlinePlayer.getUniqueId());
+        }
+
         return Optional.empty();
     }
 
-    private boolean validatePayment(Player payer, Player payee) {
-        if (!payer.getUniqueId().equals(payee.getUniqueId())) return true;
-
-        payer.sendMessage(errorComponent("You cannot pay yourself."));
-        return false;
+    private boolean validatePayment(UUID payerUuid, UUID payeeUuid) {
+        if (payerUuid.equals(payeeUuid)) {
+            Objects.requireNonNull(Bukkit.getPlayer(payerUuid)).sendMessage(errorComponent("You cannot pay yourself."));
+            return false;
+        }
+        return true;
     }
 
     private Optional<BigDecimal> parseAmount(Player payer, String input) {
@@ -106,29 +131,44 @@ public class PayCommand implements CommandExecutor {
         }
     }
 
-    private boolean processPayment(Player payer, Player payee, BigDecimal amount) {
-        if (economyManager.hasInsufficientFunds(payer.getUniqueId(), amount)) {
-            payer.sendMessage(errorComponent("Insufficient funds."));
+    private String getPlayerName(UUID uuid) {
+        OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+        return player.getName() != null ? player.getName() : "Unknown Player";
+    }
+
+    private boolean processPayment(UUID payerUuid, UUID payeeUuid, BigDecimal amount) {
+        Player payer = Bukkit.getPlayer(payerUuid);
+
+        if (economyManager.hasInsufficientFunds(payerUuid, amount)) {
+            if (payer != null) {
+                payer.sendMessage(errorComponent("Insufficient funds."));
+            }
             return false;
         }
 
-        if (!economyManager.transferBalance(payer.getUniqueId(), payee.getUniqueId(), amount)) {
-            payer.sendMessage(errorComponent("Transaction failed. Please try again."));
+        if (!economyManager.transferBalance(payerUuid, payeeUuid, amount)) {
+            if (payer != null) {
+                payer.sendMessage(errorComponent("Transaction failed. Please try again."));
+            }
             return false;
         }
         return true;
     }
 
-    private void sendSuccessMessages(Player payer, Player payee, BigDecimal amount) {
+    private void sendSuccessMessages(Player payer, UUID payeeUuid, BigDecimal amount) {
         String formattedAmount = moneyFormat.formatPrice(amount);
+        String payeeName = getPlayerName(payeeUuid);
 
         // Payer message
-        payer.sendMessage(buildPaymentMessage("You paid ", payee.getName(), " ", formattedAmount));
+        payer.sendMessage(buildPaymentMessage("You paid ", payeeName, " ", formattedAmount));
 
-        // Payee message
-        payee.sendMessage(buildReceivedMessage(
-                "You received ", formattedAmount, " from ", payer.getName()
-        ));
+        // Notify payee if online
+        Player onlinePayee = Bukkit.getPlayer(payeeUuid);
+        if (onlinePayee != null) {
+            onlinePayee.sendMessage(buildReceivedMessage(
+                    "You received ", formattedAmount, " from ", payer.getName()
+            ));
+        }
     }
 
     private Component buildPaymentMessage(String... parts) {
@@ -151,10 +191,10 @@ public class PayCommand implements CommandExecutor {
         return builder.build();
     }
 
-    private void logTransaction(Player payer, Player payee, BigDecimal amount) {
+    private void logTransaction(Player payer, UUID payeeUuid, BigDecimal amount) {
         String logMessage = String.format("%s paid %s %s",
                 payer.getName(),
-                payee.getName(),
+                getPlayerName(payeeUuid),
                 moneyFormat.formatPrice(amount));
 
         plugin.getLogger().info(logMessage);

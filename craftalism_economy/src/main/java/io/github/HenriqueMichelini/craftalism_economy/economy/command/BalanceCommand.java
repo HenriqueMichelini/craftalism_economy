@@ -57,24 +57,22 @@ public class BalanceCommand implements CommandExecutor {
     }
 
     private boolean showOtherBalance(Player requester, String targetName) {
-        return resolvePlayer(targetName)
-                .map(target -> {
-                    BigDecimal balance = economyManager.getBalance(target.getUniqueId());
-                    sendBalanceMessage(requester, target.getName() + "'s balance is: ", balance);
-                    logQuery(requester.getName(), target.getName());
-                    return true;
-                })
-                .orElseGet(() -> {
-                    requester.sendMessage(errorComponent("Player not found."));
-                    return false;
-                });
+        OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
+
+        // Handle potential null names for invalid players
+        if (target.getName() == null) {
+            requester.sendMessage(errorComponent("Player does not exist."));
+            return false;
+        }
+
+        BigDecimal balance = economyManager.getBalance(target.getUniqueId());
+        sendBalanceMessage(requester, target.getName() + "'s balance is: ", balance);
+        logQuery(requester.getName(), target.getName());
+        return true;
     }
 
     private Optional<OfflinePlayer> resolvePlayer(String name) {
-        OfflinePlayer player = Bukkit.getOfflinePlayer(name);
-        return (player.hasPlayedBefore() || player.isOnline()) ?
-                Optional.of(player) :
-                Optional.empty();
+        return Optional.of(Bukkit.getOfflinePlayer(name));
     }
 
     private boolean showUsage(Player player) {

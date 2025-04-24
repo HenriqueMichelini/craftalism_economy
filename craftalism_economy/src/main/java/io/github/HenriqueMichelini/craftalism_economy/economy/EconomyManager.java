@@ -187,4 +187,6 @@ public class EconomyManager {
     private boolean isInvalidAmount(BigDecimal amount) {
         return amount.compareTo(BigDecimal.ZERO) <= 0;
     }
+
+
 }
