@@ -123,7 +123,7 @@ public class PayCommand implements CommandExecutor {
         String formattedAmount = moneyFormat.formatPrice(amount);
 
         // Payer message
-        payer.sendMessage(buildPaymentMessage("You paid ", payee.getName(), formattedAmount));
+        payer.sendMessage(buildPaymentMessage("You paid ", payee.getName(), " ", formattedAmount));
 
         // Payee message
         payee.sendMessage(buildReceivedMessage(
