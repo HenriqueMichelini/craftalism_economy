@@ -72,9 +72,9 @@ public class PayCommand implements CommandExecutor {
 
     private Optional<Player> resolvePayee(Player payer, String username) {
         Player payee = Bukkit.getPlayer(username);
-        if (payee != null && payee.isOnline()) return Optional.of(payee);
+        if (payee != null) return Optional.of(payee);
 
-        payer.sendMessage(errorComponent("Player not found or offline."));
+        payer.sendMessage(errorComponent("Player not found"));
         return Optional.empty();
     }
 
