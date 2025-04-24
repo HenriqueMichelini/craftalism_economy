@@ -69,7 +69,6 @@ public final class CraftalismEconomy extends JavaPlugin {
 
     private void initializeEconomyManager() {
         this.economyManager = new EconomyManager(this, defaultBalance);
-        economyManager.loadBalances();
         getLogger().fine("Economy manager initialized");
     }
 
