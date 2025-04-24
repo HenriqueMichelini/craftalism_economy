@@ -1,3 +1,4 @@
-# Default configuration for Craftalism
-economy:
-  default-balance: 10000.0
+default-balance: 10000.0
+locale: en-US
+currency-symbol: "$"
+null-representation: "—"
