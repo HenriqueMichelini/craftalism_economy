@@ -1,7 +1,8 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
-import io.github.HenriqueMichelini.craftalism_economy.economy.EconomyManager;
+import io.github.HenriqueMichelini.craftalism_economy.economy.managers.BalanceManager;
 import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
+import io.github.HenriqueMichelini.craftalism_economy.economy.util.Validators;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -14,43 +15,37 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.math.BigDecimal;
-import java.util.Optional;
-
 public class BalanceCommand implements CommandExecutor {
     private static final TextColor PREFIX_COLOR = NamedTextColor.GREEN;
     private static final TextColor BALANCE_COLOR = NamedTextColor.WHITE;
     private static final TextColor ERROR_COLOR = NamedTextColor.RED;
 
-    private final EconomyManager economyManager;
+    private final BalanceManager balanceManager;
     private final JavaPlugin plugin;
     private final MoneyFormat moneyFormat;
+    private final Validators validators;
 
-    public BalanceCommand(EconomyManager economyManager, JavaPlugin plugin, MoneyFormat moneyFormat) {
-        this.economyManager = economyManager;
+    public BalanceCommand(BalanceManager balanceManager, JavaPlugin plugin, MoneyFormat moneyFormat, Validators validators) {
+        this.balanceManager = balanceManager;
         this.plugin = plugin;
         this.moneyFormat = moneyFormat;
+        this.validators = validators;
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, String @NotNull [] args) {
-        if (!validateSender(sender)) return true;
-        Player player = (Player) sender;
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
+        if (validators.validateSender(sender)) {
+            Player player = (Player) sender;
+            return args.length == 0 ? showOwnBalance(player) :
+                    args.length == 1 ? showOtherBalance(player, args[0]) :
+                            showUsage(player);
+        }
 
-        return args.length == 0 ? showOwnBalance(player) :
-                args.length == 1 ? showOtherBalance(player, args[0]) :
-                        showUsage(player);
-    }
-
-    private boolean validateSender(CommandSender sender) {
-        if (sender instanceof Player) return true;
-        sender.sendMessage(errorComponent("Only players can use this command."));
         return false;
     }
 
     private boolean showOwnBalance(Player player) {
-        BigDecimal balance = economyManager.getBalance(player.getUniqueId());
+        long balance = balanceManager.getBalance(player.getUniqueId());
         sendBalanceMessage(player, "Your balance is: ", balance);
         logQuery(player.getName(), "self");
         return true;
@@ -65,14 +60,10 @@ public class BalanceCommand implements CommandExecutor {
             return false;
         }
 
-        BigDecimal balance = economyManager.getBalance(target.getUniqueId());
+        long balance = balanceManager.getBalance(target.getUniqueId());
         sendBalanceMessage(requester, target.getName() + "'s balance is: ", balance);
         logQuery(requester.getName(), target.getName());
         return true;
-    }
-
-    private Optional<OfflinePlayer> resolvePlayer(String name) {
-        return Optional.of(Bukkit.getOfflinePlayer(name));
     }
 
     private boolean showUsage(Player player) {
@@ -80,7 +71,7 @@ public class BalanceCommand implements CommandExecutor {
         return true;
     }
 
-    private void sendBalanceMessage(Player recipient, String prefix, BigDecimal balance) {
+    private void sendBalanceMessage(Player recipient, String prefix, long balance) {
         String formatted = moneyFormat.formatPrice(balance);
         recipient.sendMessage(
                 Component.text(prefix)

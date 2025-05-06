@@ -1,21 +1,20 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
-import io.github.HenriqueMichelini.craftalism_economy.economy.EconomyManager;
+import io.github.HenriqueMichelini.craftalism_economy.economy.managers.BalanceManager;
 import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
+import io.github.HenriqueMichelini.craftalism_economy.economy.util.Validators;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Optional;
 
 public class SetBalanceCommand implements CommandExecutor {
@@ -23,71 +22,39 @@ public class SetBalanceCommand implements CommandExecutor {
     private static final NamedTextColor SUCCESS_COLOR = NamedTextColor.GREEN;
     private static final NamedTextColor VALUE_COLOR = NamedTextColor.WHITE;
 
-    private final EconomyManager economyManager;
+    private final BalanceManager balanceManager;
     private final JavaPlugin plugin;
     private final MoneyFormat moneyFormat;
+    private final Validators validators;
 
-    public SetBalanceCommand(EconomyManager economyManager, JavaPlugin plugin, MoneyFormat moneyFormat) {
-        this.economyManager = economyManager;
+    public SetBalanceCommand(BalanceManager balanceManager, JavaPlugin plugin, MoneyFormat moneyFormat, Validators validators) {
+        this.balanceManager = balanceManager;
         this.plugin = plugin;
         this.moneyFormat = moneyFormat;
+        this.validators = validators;
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String @NotNull [] args) {
-        if (!validateArguments(sender, args)) return true;
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NotNull [] args) {
+        Optional<Long> amount;
+        Player player = (Player) sender;
+        OfflinePlayer target;
 
-        OfflinePlayer target = resolvePlayer(sender, args[0]);
-        if (target == null || !validateTarget(target)) return true;
+        if (validators.validateArguments(sender, args, args.length)) {
+            target = validators.resolvePlayer(sender, args[0]);
 
-        Optional<BigDecimal> amount = parseAmount(sender, args[1]);
-        return amount.map(bigDecimal -> processBalanceUpdate(sender, target, bigDecimal)).orElse(true);
+            if (target != null && validators.validateTarget(target)) {
+                amount = moneyFormat.parseAmount(player, args[1]);
+                return amount.map(bigDecimal -> processBalanceUpdate(sender, target, bigDecimal)).orElse(true);
+            }
+        }
 
-    }
-
-    private boolean validateArguments(CommandSender sender, String[] args) {
-        if (args.length == 2) return true;
-
-        sender.sendMessage(Component.text("Usage: /setbalance <player> <amount>")
-                .color(ERROR_COLOR));
         return false;
     }
 
-    private OfflinePlayer resolvePlayer(CommandSender sender, String username) {
-        OfflinePlayer player = Bukkit.getOfflinePlayer(username);
-        if (player.hasPlayedBefore() || player.isOnline()) return player;
-
-        sender.sendMessage(Component.text("Player not found.").color(ERROR_COLOR));
-        return null;
-    }
-
-    private boolean validateTarget(OfflinePlayer target) {
-        target.getUniqueId();
-        return true;
-
-    }
-
-    private Optional<BigDecimal> parseAmount(CommandSender sender, String input) {
+    private boolean processBalanceUpdate(CommandSender sender, OfflinePlayer target, long amount) {
         try {
-            BigDecimal amount = new BigDecimal(input).setScale(2, RoundingMode.HALF_UP);
-
-            if (amount.compareTo(BigDecimal.ZERO) < 0) {
-                sender.sendMessage(Component.text("Balance cannot be negative.").color(ERROR_COLOR));
-                return Optional.empty();
-            }
-
-            return Optional.of(amount);
-        } catch (NumberFormatException e) {
-            sender.sendMessage(Component.text("Invalid amount format. Use numbers only.")
-                    .color(ERROR_COLOR));
-            return Optional.empty();
-        }
-    }
-
-    private boolean processBalanceUpdate(CommandSender sender, OfflinePlayer target, BigDecimal amount) {
-        try {
-            economyManager.setBalance(target.getUniqueId(), amount);
+            balanceManager.setBalance(target.getUniqueId(), amount);
             sendConfirmationMessages(sender, target, amount);
             logTransaction(sender, target, amount);
             return true;
@@ -99,7 +66,7 @@ public class SetBalanceCommand implements CommandExecutor {
         }
     }
 
-    private void sendConfirmationMessages(CommandSender sender, OfflinePlayer target, BigDecimal amount) {
+    private void sendConfirmationMessages(CommandSender sender, OfflinePlayer target, long amount) {
         String formattedAmount = moneyFormat.formatPrice(amount);
         String targetName = Optional.ofNullable(target.getName()).orElse("Unknown Player");
 
@@ -123,7 +90,7 @@ public class SetBalanceCommand implements CommandExecutor {
         return builder.build();
     }
 
-    private void logTransaction(CommandSender sender, OfflinePlayer target, BigDecimal amount) {
+    private void logTransaction(CommandSender sender, OfflinePlayer target, long amount) {
         String logMessage = String.format("%s set %s's balance to %s",
                 sender.getName(),
                 Optional.ofNullable(target.getName()).orElse("UNKNOWN"),

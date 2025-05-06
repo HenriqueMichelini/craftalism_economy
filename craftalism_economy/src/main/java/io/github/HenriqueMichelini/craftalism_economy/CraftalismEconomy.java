@@ -1,16 +1,19 @@
 package io.github.HenriqueMichelini.craftalism_economy;
 
-import io.github.HenriqueMichelini.craftalism_economy.economy.EconomyManager;
+import io.github.HenriqueMichelini.craftalism_economy.economy.managers.EconomyManager;
 import io.github.HenriqueMichelini.craftalism_economy.economy.command.BalanceCommand;
 import io.github.HenriqueMichelini.craftalism_economy.economy.command.BaltopCommand;
 import io.github.HenriqueMichelini.craftalism_economy.economy.command.PayCommand;
 import io.github.HenriqueMichelini.craftalism_economy.economy.command.SetBalanceCommand;
+import io.github.HenriqueMichelini.craftalism_economy.economy.managers.BalanceManager;
 import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
+import io.github.HenriqueMichelini.craftalism_economy.economy.util.Validators;
 import org.bukkit.command.CommandExecutor;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.io.File;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -18,7 +21,12 @@ import java.util.logging.Level;
 public final class CraftalismEconomy extends JavaPlugin {
     private EconomyManager economyManager;
     private MoneyFormat moneyFormat;
-    private BigDecimal defaultBalance;
+    private long defaultBalance;
+    private Validators validators;
+    private final File balancesFile = new File(this.getDataFolder(), "balances.yml");
+
+    private final FileConfiguration balancesConfig = YamlConfiguration.loadConfiguration(balancesFile);
+    private BalanceManager balanceManager;
 
     @Override
     public void onEnable() {
@@ -27,6 +35,8 @@ public final class CraftalismEconomy extends JavaPlugin {
         reloadConfig();
 
         this.defaultBalance = parseDefaultBalance();
+        this.balanceManager = new BalanceManager(balancesFile, balancesConfig, defaultBalance, this);
+        this.validators = new Validators(economyManager, balanceManager);
 
         // Initialize components
         initializeMoneyFormat();
@@ -57,26 +67,25 @@ public final class CraftalismEconomy extends JavaPlugin {
         }
     }
 
-    private BigDecimal parseDefaultBalance() {
-        double balance = getConfig().getDouble("default-balance", 10000.0);
+    private long parseDefaultBalance() {
+        long balance = getConfig().getLong("default-balance", 10000);
         if (balance < 0) {
-            getLogger().warning("Invalid negative default balance, using 10000.0");
-            balance = 10000.0;
+            getLogger().warning("Invalid negative default balance, using 10000.0000");
+            balance = 10000;
         }
-        return BigDecimal.valueOf(balance)
-                .setScale(2, RoundingMode.HALF_UP);
+        return balance;
     }
 
     private void initializeEconomyManager() {
-        this.economyManager = new EconomyManager(this, defaultBalance);
+        this.economyManager = new EconomyManager(validators, balanceManager);
         getLogger().fine("Economy manager initialized");
     }
 
     private void registerCommands() {
-        registerCommand("pay", new PayCommand(economyManager, this, moneyFormat));
-        registerCommand("balance", new BalanceCommand(economyManager, this, moneyFormat));
+        registerCommand("pay", new PayCommand(economyManager, this, moneyFormat, validators));
+        registerCommand("balance", new BalanceCommand(balanceManager, this, moneyFormat, validators));
         registerCommand("baltop", new BaltopCommand(economyManager, this, moneyFormat));
-        registerCommand("setbalance", new SetBalanceCommand(economyManager, this, moneyFormat));
+        registerCommand("setbalance", new SetBalanceCommand(balanceManager, this, moneyFormat, validators));
     }
 
     private void registerCommand(String name, CommandExecutor executor) {
@@ -92,14 +101,34 @@ public final class CraftalismEconomy extends JavaPlugin {
     @Override
     public void onDisable() {
         try {
-            if (economyManager != null) {
-                economyManager.saveBalances();
+            if (balanceManager != null) {
+                balanceManager.saveBalances();
             }
         } catch (Exception e) {
             getLogger().log(Level.SEVERE, "Error saving balances during shutdown", e);
         } finally {
             getLogger().info("Plugin disabled successfully");
         }
+    }
+
+    public FileConfiguration getBalancesConfig() {
+        return balancesConfig;
+    }
+
+    public File getBalancesFile() {
+        return balancesFile;
+    }
+
+    public Validators getValidators() {
+        return validators;
+    }
+
+    public long getDefaultBalance() {
+        return defaultBalance;
+    }
+
+    public MoneyFormat getMoneyFormat() {
+        return moneyFormat;
     }
 
     public EconomyManager getEconomyManager() {

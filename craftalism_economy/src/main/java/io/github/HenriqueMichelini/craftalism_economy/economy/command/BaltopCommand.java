@@ -1,6 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
-import io.github.HenriqueMichelini.craftalism_economy.economy.EconomyManager;
+import io.github.HenriqueMichelini.craftalism_economy.economy.managers.EconomyManager;
 import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -14,7 +14,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
-import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +45,7 @@ public class BaltopCommand implements CommandExecutor {
         if (!validateSender(sender)) return true;
         Player player = (Player) sender;
 
-        List<Map.Entry<UUID, BigDecimal>> topBalances = getSortedBalances();
+        List<Map.Entry<UUID, Long>> topBalances = getSortedBalances();
         sendBaltopHeader(player);
         sendBaltopEntries(player, topBalances);
         logCommandUsage(player);
@@ -61,9 +60,9 @@ public class BaltopCommand implements CommandExecutor {
         return false;
     }
 
-    private List<Map.Entry<UUID, BigDecimal>> getSortedBalances() {
+    private List<Map.Entry<UUID, Long>> getSortedBalances() {
         return economyManager.getAllBalances().entrySet().stream()
-                .sorted(Comparator.comparing(Map.Entry<UUID, BigDecimal>::getValue).reversed())
+                .sorted(Comparator.comparing(Map.Entry<UUID, Long>::getValue).reversed())
                 .limit(TOP_LIMIT)
                 .collect(Collectors.toList());
     }
@@ -76,7 +75,7 @@ public class BaltopCommand implements CommandExecutor {
         );
     }
 
-    private void sendBaltopEntries(Player player, List<Map.Entry<UUID, BigDecimal>> entries) {
+    private void sendBaltopEntries(Player player, List<Map.Entry<UUID, Long>> entries) {
         int[] rank = {1}; // Array to allow increment in lambda
 
         entries.forEach(entry -> {
