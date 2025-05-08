@@ -3,7 +3,7 @@ plugins {
 }
 
 group = 'io.github.HenriqueMichelini'
-version = '1.1-SNAPSHOT'
+version = '1.2-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -50,5 +50,5 @@ processResources {
 }
 
 tasks.jar {
-    archiveFileName = "craftalism_economy-1.1-SNAPSHOT.jar" // Set the output JAR file name
+    archiveFileName = "craftalism_economy-1.2-SNAPSHOT.jar" // Set the output JAR file name
 }

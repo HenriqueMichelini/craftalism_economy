@@ -17,8 +17,6 @@ public class MoneyFormat {
     public static final BigDecimal DECIMAL_SCALE_BD = BigDecimal.valueOf(10000);
 
     private static final NamedTextColor ERROR_COLOR = NamedTextColor.RED;
-//    private static final NamedTextColor SUCCESS_COLOR = NamedTextColor.GREEN;
-//    private static final NamedTextColor VALUE_COLOR = NamedTextColor.WHITE;
 
     public MoneyFormat(Locale locale, String currencySymbol, String nullValue) {
         this.currencySymbol = currencySymbol;
@@ -27,7 +25,7 @@ public class MoneyFormat {
         this.formatter = ThreadLocal.withInitial(() -> {
             NumberFormat nf = NumberFormat.getInstance(locale);
             nf.setMinimumFractionDigits(2);
-            nf.setMaximumFractionDigits(2); // Only show 2 decimal places
+            nf.setMaximumFractionDigits(2);
             nf.setGroupingUsed(true);
             return nf;
         });
@@ -47,7 +45,7 @@ public class MoneyFormat {
 
     public Optional<Long> parseAmount(Player payer, String input) {
         try {
-            input = input.trim(); // Handle leading/trailing whitespace
+            input = input.trim();
             BigDecimal decimal = new BigDecimal(input);
             BigDecimal scaled = decimal.multiply(MoneyFormat.DECIMAL_SCALE_BD);
 

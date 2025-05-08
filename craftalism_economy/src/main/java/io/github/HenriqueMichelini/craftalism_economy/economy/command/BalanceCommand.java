@@ -54,7 +54,6 @@ public class BalanceCommand implements CommandExecutor {
     private boolean showOtherBalance(Player requester, String targetName) {
         OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
 
-        // Handle potential null names for invalid players
         if (target.getName() == null) {
             requester.sendMessage(errorComponent("Player does not exist."));
             return false;

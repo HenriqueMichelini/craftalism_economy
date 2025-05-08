@@ -54,7 +54,7 @@ public class PayCommand implements CommandExecutor {
         if (amountOpt.isEmpty()) return false;
         long amount = amountOpt.get();
 
-        if (!processPayment(payer, payeeUuid.get(), amount)) return true;
+        if (!processPayment(payer, payeeUuid.get(), amount)) return false;
 
         sendSuccessMessages(payer, payeeUuid.get(), amount);
         logTransaction(payer, payeeUuid.get(), amount);
@@ -62,7 +62,6 @@ public class PayCommand implements CommandExecutor {
     }
 
     private Optional<UUID> resolvePayeeUuid(String name) {
-        // 1. Check exact name match in existing economy entries
         Optional<UUID> balanceMatch = economyManager.getAllBalances().keySet().stream()
                 .filter(uuid -> {
                     OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
@@ -74,7 +73,6 @@ public class PayCommand implements CommandExecutor {
             return balanceMatch;
         }
 
-        // 2. Check Bukkit's offline players with economy account
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
         if ((offlinePlayer.hasPlayedBefore() || offlinePlayer.isOnline())
                 && economyManager.getAllBalances().containsKey(offlinePlayer.getUniqueId())) {

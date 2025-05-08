@@ -30,7 +30,6 @@ public final class CraftalismEconomy extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Create config if missing and load it
         saveDefaultConfig();
         reloadConfig();
 
@@ -38,7 +37,6 @@ public final class CraftalismEconomy extends JavaPlugin {
         this.balanceManager = new BalanceManager(balancesFile, balancesConfig, defaultBalance, this);
         this.validators = new Validators(economyManager, balanceManager);
 
-        // Initialize components
         initializeMoneyFormat();
         initializeEconomyManager();
         registerCommands();
@@ -68,10 +66,10 @@ public final class CraftalismEconomy extends JavaPlugin {
     }
 
     private long parseDefaultBalance() {
-        long balance = getConfig().getLong("default-balance", 10000);
+        long balance = getConfig().getLong("default-balance", 100000000);
         if (balance < 0) {
             getLogger().warning("Invalid negative default balance, using 10000.0000");
-            balance = 10000;
+            balance = 100000000;
         }
         return balance;
     }

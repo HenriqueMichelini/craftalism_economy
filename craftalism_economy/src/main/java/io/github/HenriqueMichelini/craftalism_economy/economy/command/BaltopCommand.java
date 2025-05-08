@@ -76,7 +76,7 @@ public class BaltopCommand implements CommandExecutor {
     }
 
     private void sendBaltopEntries(Player player, List<Map.Entry<UUID, Long>> entries) {
-        int[] rank = {1}; // Array to allow increment in lambda
+        int[] rank = {1};
 
         entries.forEach(entry -> {
             String playerName = Optional.ofNullable(Bukkit.getOfflinePlayer(entry.getKey()).getName())
