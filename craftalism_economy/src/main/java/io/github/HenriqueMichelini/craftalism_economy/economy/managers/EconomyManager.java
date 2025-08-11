@@ -2,8 +2,6 @@ package io.github.HenriqueMichelini.craftalism_economy.economy.managers;
 
 import io.github.HenriqueMichelini.craftalism_economy.economy.util.Validators;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 public class EconomyManager {
@@ -35,11 +33,8 @@ public class EconomyManager {
         if (validators.isValidAmount(amount) && validators.hasSufficientFunds(from, amount)) {
             withdraw(from, amount);
             deposit(to, amount);
+            return true;
         }
-        return true;
-    }
-
-    public Map<UUID, Long> getAllBalances() {
-        return new HashMap<>(balanceManager.getAllBalances());
+        return false;
     }
 }
