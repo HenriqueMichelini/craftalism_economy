@@ -13,8 +13,8 @@ public class MoneyFormat {
     private final ThreadLocal<NumberFormat> formatter;
     private final String currencySymbol;
     private final String nullValue;
-    public static final long DECIMAL_SCALE = 10_000L; // 4 decimal places
-    public static final BigDecimal DECIMAL_SCALE_BD = BigDecimal.valueOf(10000);
+    public static final long DECIMAL_SCALE = 10000; // 4 decimal places
+    public static final BigDecimal DECIMAL_SCALE_BD = BigDecimal.valueOf(DECIMAL_SCALE);
 
     private static final NamedTextColor ERROR_COLOR = NamedTextColor.RED;
 
@@ -43,6 +43,7 @@ public class MoneyFormat {
         }
     }
 
+    //consider making a class only for parseAmount and stuff like this
     public Optional<Long> parseAmount(Player payer, String input) {
         try {
             input = input.trim();

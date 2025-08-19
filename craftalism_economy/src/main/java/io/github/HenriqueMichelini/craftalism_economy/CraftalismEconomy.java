@@ -35,7 +35,7 @@ public final class CraftalismEconomy extends JavaPlugin {
 
         this.defaultBalance = parseDefaultBalance();
         this.balanceManager = new BalanceManager(balancesFile, balancesConfig, defaultBalance, this);
-        this.validators = new Validators(economyManager, balanceManager);
+        this.validators = new Validators(balanceManager);
 
         initializeMoneyFormat();
         initializeEconomyManager();
@@ -80,9 +80,9 @@ public final class CraftalismEconomy extends JavaPlugin {
     }
 
     private void registerCommands() {
-        registerCommand("pay", new PayCommand(economyManager, this, moneyFormat, validators));
+        registerCommand("pay", new PayCommand(economyManager, balanceManager, this, moneyFormat, validators));
         registerCommand("balance", new BalanceCommand(balanceManager, this, moneyFormat, validators));
-        registerCommand("baltop", new BaltopCommand(economyManager, this, moneyFormat));
+        registerCommand("baltop", new BaltopCommand(balanceManager, this, moneyFormat));
         registerCommand("setbalance", new SetBalanceCommand(balanceManager, this, moneyFormat, validators));
     }
 

@@ -1,5 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
+import io.github.HenriqueMichelini.craftalism_economy.economy.managers.BalanceManager;
 import io.github.HenriqueMichelini.craftalism_economy.economy.managers.EconomyManager;
 import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
 import net.kyori.adventure.text.Component;
@@ -29,12 +30,12 @@ public class BaltopCommand implements CommandExecutor {
     private static final TextColor SEPARATOR_COLOR = TextColor.color(NamedTextColor.WHITE);
     private static final TextColor BALANCE_COLOR = TextColor.color(NamedTextColor.AQUA);
 
-    private final EconomyManager economyManager;
+    private final BalanceManager balanceManager;
     private final JavaPlugin plugin;
     private final MoneyFormat moneyFormat;
 
-    public BaltopCommand(EconomyManager economyManager, JavaPlugin plugin, MoneyFormat moneyFormat) {
-        this.economyManager = economyManager;
+    public BaltopCommand(BalanceManager balanceManager, JavaPlugin plugin, MoneyFormat moneyFormat) {
+        this.balanceManager = balanceManager;
         this.plugin = plugin;
         this.moneyFormat = moneyFormat;
     }
@@ -61,7 +62,7 @@ public class BaltopCommand implements CommandExecutor {
     }
 
     private List<Map.Entry<UUID, Long>> getSortedBalances() {
-        return economyManager.getAllBalances().entrySet().stream()
+        return balanceManager.getAllBalances().entrySet().stream()
                 .sorted(Comparator.comparing(Map.Entry<UUID, Long>::getValue).reversed())
                 .limit(TOP_LIMIT)
                 .collect(Collectors.toList());

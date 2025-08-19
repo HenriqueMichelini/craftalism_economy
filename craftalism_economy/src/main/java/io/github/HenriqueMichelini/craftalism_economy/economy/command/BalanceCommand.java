@@ -6,7 +6,6 @@ import io.github.HenriqueMichelini.craftalism_economy.economy.util.Validators;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -14,6 +13,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.Optional;
+import java.util.UUID;
 
 public class BalanceCommand implements CommandExecutor {
     private static final TextColor PREFIX_COLOR = NamedTextColor.GREEN;
@@ -25,6 +27,8 @@ public class BalanceCommand implements CommandExecutor {
     private final MoneyFormat moneyFormat;
     private final Validators validators;
 
+    private long balance;
+
     public BalanceCommand(BalanceManager balanceManager, JavaPlugin plugin, MoneyFormat moneyFormat, Validators validators) {
         this.balanceManager = balanceManager;
         this.plugin = plugin;
@@ -34,34 +38,47 @@ public class BalanceCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
-        if (validators.validateSender(sender)) {
-            Player player = (Player) sender;
-            return args.length == 0 ? showOwnBalance(player) :
-                    args.length == 1 ? showOtherBalance(player, args[0]) :
-                            showUsage(player);
+        if (!validators.isNotPlayer(sender)) {
+            return false;
         }
 
-        return false;
+        Player player = (Player) sender;
+
+        if (args.length == 0 && showOwnBalance(player)) {
+            logShowOwnBalance(player.getName());
+            return true;
+        }
+
+        String targetName = args[0];
+        if (targetName == null || targetName.isEmpty()) {
+            sender.sendMessage("Error: player not found.");
+            return showUsage(player);
+        }
+
+        return args.length == 1 ? showOtherBalance(player, targetName) : showUsage(player);
     }
 
     private boolean showOwnBalance(Player player) {
-        long balance = balanceManager.getBalance(player.getUniqueId());
-        sendBalanceMessage(player, "Your balance is: ", balance);
-        logQuery(player.getName(), "self");
+        if(balanceManager.checkIfBalanceExists(player.getUniqueId())) {
+            this.balance = balanceManager.getBalance(player.getUniqueId());
+        }
+        sendBalanceMessage(player, "Your balance is: ", this.balance);
         return true;
     }
 
     private boolean showOtherBalance(Player requester, String targetName) {
-        OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
+        Optional<OfflinePlayer> player = validators.resolvePlayer(requester, targetName);
 
-        if (target.getName() == null) {
-            requester.sendMessage(errorComponent("Player does not exist."));
+        if (player.isEmpty()) {
+            requester.sendMessage("player not found");
             return false;
         }
 
-        long balance = balanceManager.getBalance(target.getUniqueId());
-        sendBalanceMessage(requester, target.getName() + "'s balance is: ", balance);
-        logQuery(requester.getName(), target.getName());
+        UUID uuid = player.get().getUniqueId();
+
+        this.balance = balanceManager.getBalance(uuid);
+
+        sendBalanceMessage(requester, targetName + "'s balance is: ", balance);
         return true;
     }
 
@@ -83,7 +100,11 @@ public class BalanceCommand implements CommandExecutor {
         return Component.text(text).color(ERROR_COLOR);
     }
 
-    private void logQuery(String requester, String target) {
-        plugin.getLogger().info("[Balance] " + requester + " checked balance of " + target);
+    private void logShowOwnBalance(String requester) {
+        plugin.getLogger().info("[CE.Balance] " + requester + " checked its own balance");
+    }
+
+    private void logShowOtherBalance(String requester, String target) {
+        plugin.getLogger().info("[CE.Balance] " + requester + " checked " + target + "'s balance.");
     }
 }

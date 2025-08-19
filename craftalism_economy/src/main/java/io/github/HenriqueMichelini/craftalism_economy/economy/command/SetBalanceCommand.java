@@ -38,18 +38,26 @@ public class SetBalanceCommand implements CommandExecutor {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NotNull [] args) {
         Optional<Long> amount;
         Player player = (Player) sender;
-        OfflinePlayer target;
 
-        if (validators.validateArguments(sender, args, args.length)) {
-            target = validators.resolvePlayer(sender, args[0]);
+        if (!validators.validateArguments(sender, args, args.length, "use /setbalance <player name> <value>")) return false;
 
-            if (target != null && validators.validateTarget(target)) {
-                amount = moneyFormat.parseAmount(player, args[1]);
-                return amount.map(bigDecimal -> processBalanceUpdate(sender, target, bigDecimal)).orElse(true);
-            }
+        String playerName = args[0];
+        String amountToSet = args[1];
+
+        if (!validators.isNotPlayer(sender)) return false;
+
+        Optional<OfflinePlayer> target = validators.resolvePlayer(player, playerName);
+
+        if(target.isEmpty()) return false;
+
+        amount = moneyFormat.parseAmount(player, amountToSet);
+
+        if (amount.isEmpty()) {
+            sender.sendMessage("Error: Amount missing!");
+            return false;
         }
 
-        return false;
+        return processBalanceUpdate(sender, target.get(), amount.get());
     }
 
     private boolean processBalanceUpdate(CommandSender sender, OfflinePlayer target, long amount) {

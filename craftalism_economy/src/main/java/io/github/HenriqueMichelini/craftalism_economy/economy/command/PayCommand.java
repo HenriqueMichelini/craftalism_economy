@@ -1,5 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
+import io.github.HenriqueMichelini.craftalism_economy.economy.managers.BalanceManager;
 import io.github.HenriqueMichelini.craftalism_economy.economy.managers.EconomyManager;
 import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
 import io.github.HenriqueMichelini.craftalism_economy.economy.util.Validators;
@@ -24,12 +25,14 @@ public class PayCommand implements CommandExecutor {
     private static final NamedTextColor VALUE_COLOR = NamedTextColor.WHITE;
 
     private final EconomyManager economyManager;
+    private final BalanceManager balanceManager;
     private final JavaPlugin plugin;
     private final MoneyFormat moneyFormat;
     private final Validators validators;
 
-    public PayCommand(EconomyManager economyManager, JavaPlugin plugin, MoneyFormat moneyFormat, Validators validators) {
+    public PayCommand(EconomyManager economyManager, BalanceManager balanceManager, JavaPlugin plugin, MoneyFormat moneyFormat, Validators validators) {
         this.economyManager = economyManager;
+        this.balanceManager = balanceManager;
         this.plugin = plugin;
         this.moneyFormat = moneyFormat;
         this.validators = validators;
@@ -37,10 +40,10 @@ public class PayCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
-        if (!validators.validateSender(sender)) return false;
+        if (!validators.isNotPlayer(sender)) return false;
         Player payer = (Player) sender;
 
-        if (!validators.validateArguments(payer, args, args.length)) return false;
+        if (!validators.validateArguments(payer, args, args.length, "asdasdasdas")) return false;
 
         Optional<UUID> payeeUuid = resolvePayeeUuid(args[0]);
         if (payeeUuid.isEmpty()) {
@@ -62,7 +65,7 @@ public class PayCommand implements CommandExecutor {
     }
 
     private Optional<UUID> resolvePayeeUuid(String name) {
-        Optional<UUID> balanceMatch = economyManager.getAllBalances().keySet().stream()
+        Optional<UUID> balanceMatch = balanceManager.getAllBalances().keySet().stream()
                 .filter(uuid -> {
                     OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
                     return player.getName() != null && player.getName().equalsIgnoreCase(name);
@@ -75,7 +78,7 @@ public class PayCommand implements CommandExecutor {
 
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(name);
         if ((offlinePlayer.hasPlayedBefore() || offlinePlayer.isOnline())
-                && economyManager.getAllBalances().containsKey(offlinePlayer.getUniqueId())) {
+                && balanceManager.getAllBalances().containsKey(offlinePlayer.getUniqueId())) {
             return Optional.of(offlinePlayer.getUniqueId());
         }
 
