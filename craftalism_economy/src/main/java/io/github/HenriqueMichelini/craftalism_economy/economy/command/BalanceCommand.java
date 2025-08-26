@@ -38,7 +38,7 @@ public class BalanceCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
-        if (!validators.isNotPlayer(sender)) {
+        if (!validators.isPlayer(sender)) {
             return false;
         }
 
@@ -51,49 +51,69 @@ public class BalanceCommand implements CommandExecutor {
 
         String targetName = args[0];
         if (targetName == null || targetName.isEmpty()) {
-            sender.sendMessage("Error: player not found.");
-            return showUsage(player);
+            sendPlayerNotFoundMessage(player);
+            sendUsageMessage(player);
+            return false;
         }
 
-        return args.length == 1 ? showOtherBalance(player, targetName) : showUsage(player);
+        if(args.length == 1) {
+            showOtherBalance(player, targetName);
+            logShowOtherBalance(player.getName(), targetName);
+            return true;
+        }
+        
+        return false;
     }
 
     private boolean showOwnBalance(Player player) {
         if(balanceManager.checkIfBalanceExists(player.getUniqueId())) {
             this.balance = balanceManager.getBalance(player.getUniqueId());
         }
-        sendBalanceMessage(player, "Your balance is: ", this.balance);
+        sendOwnBalanceMessage(player, this.balance);
         return true;
     }
 
-    private boolean showOtherBalance(Player requester, String targetName) {
+    private void sendOwnBalanceMessage(Player player, long balance) {
+        String formatted = moneyFormat.formatPrice(balance);
+        player.sendMessage(
+                Component.text("Your balance is: ")
+                        .color(PREFIX_COLOR)
+                        .append(Component.text(formatted).color(BALANCE_COLOR))
+        );
+    }
+
+    private void showOtherBalance(Player requester, String targetName) {
         Optional<OfflinePlayer> player = validators.resolvePlayer(requester, targetName);
 
         if (player.isEmpty()) {
-            requester.sendMessage("player not found");
-            return false;
+            sendPlayerNotFoundMessage(requester);
+            return;
         }
 
         UUID uuid = player.get().getUniqueId();
 
         this.balance = balanceManager.getBalance(uuid);
 
-        sendBalanceMessage(requester, targetName + "'s balance is: ", balance);
-        return true;
+        logShowOtherBalance(requester.getName(), targetName);
+        sendOtherBalanceMessage(requester, targetName, balance);
     }
 
-    private boolean showUsage(Player player) {
-        player.sendMessage(errorComponent("Usage: /balance [player]"));
-        return true;
-    }
-
-    private void sendBalanceMessage(Player recipient, String prefix, long balance) {
+    private void sendOtherBalanceMessage(Player recipient, String targetName, long balance) {
         String formatted = moneyFormat.formatPrice(balance);
         recipient.sendMessage(
-                Component.text(prefix)
+                Component.text(targetName + "'s balance is: ")
                         .color(PREFIX_COLOR)
                         .append(Component.text(formatted).color(BALANCE_COLOR))
         );
+    }
+
+    private void sendUsageMessage(Player player) {
+        player.sendMessage(errorComponent("Usage: /balance [player]"));
+    }
+
+    private void sendPlayerNotFoundMessage(Player player) {
+        Component message = errorComponent("player not found");
+        player.sendMessage(message);
     }
 
     private Component errorComponent(String text) {
