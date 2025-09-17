@@ -35,7 +35,7 @@ public class Validators {
         return Optional.empty();
     }
 
-    public boolean isNotPlayer(CommandSender sender) {
+    public boolean isPlayer(CommandSender sender) {
         return sender instanceof Player;
     }
 
@@ -52,7 +52,10 @@ public class Validators {
     }
 
     public boolean hasSufficientFunds(UUID playerUUID, long amount) {
-        return balanceManager.getBalance(playerUUID) - amount >= 0;
+        if (!isValidAmount(amount)) {
+            return false;
+        }
+        return balanceManager.getBalance(playerUUID) >= amount;
     }
 
     public boolean isValidAmount(long amount) {
