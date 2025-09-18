@@ -1,8 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
+import io.github.HenriqueMichelini.craftalism_economy.economy.currency.CurrencyFormatter;
 import io.github.HenriqueMichelini.craftalism_economy.economy.managers.BalanceManager;
-import io.github.HenriqueMichelini.craftalism_economy.economy.managers.EconomyManager;
-import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -32,12 +31,12 @@ public class BaltopCommand implements CommandExecutor {
 
     private final BalanceManager balanceManager;
     private final JavaPlugin plugin;
-    private final MoneyFormat moneyFormat;
+    private final CurrencyFormatter currencyFormatter;
 
-    public BaltopCommand(BalanceManager balanceManager, JavaPlugin plugin, MoneyFormat moneyFormat) {
+    public BaltopCommand(BalanceManager balanceManager, JavaPlugin plugin, CurrencyFormatter currencyFormatter) {
         this.balanceManager = balanceManager;
         this.plugin = plugin;
-        this.moneyFormat = moneyFormat;
+        this.currencyFormatter = currencyFormatter;
     }
 
     @Override
@@ -86,7 +85,7 @@ public class BaltopCommand implements CommandExecutor {
             player.sendMessage(buildBaltopEntry(
                     rank[0]++,
                     playerName,
-                    moneyFormat.formatPrice(entry.getValue())
+                    currencyFormatter.formatCurrency(entry.getValue())
             ));
         });
     }
@@ -101,6 +100,6 @@ public class BaltopCommand implements CommandExecutor {
     }
 
     private void logCommandUsage(Player player) {
-        plugin.getLogger().info("[Baltop] " + player.getName() + " viewed balance rankings");
+        plugin.getLogger().info("[CE.Baltop] " + player.getName() + " viewed balance rankings");
     }
 }

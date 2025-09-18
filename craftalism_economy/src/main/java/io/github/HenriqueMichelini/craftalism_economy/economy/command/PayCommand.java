@@ -1,9 +1,11 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
+import io.github.HenriqueMichelini.craftalism_economy.economy.currency.CurrencyFormatter;
+import io.github.HenriqueMichelini.craftalism_economy.economy.currency.CurrencyParser;
 import io.github.HenriqueMichelini.craftalism_economy.economy.managers.BalanceManager;
 import io.github.HenriqueMichelini.craftalism_economy.economy.managers.EconomyManager;
-import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
-import io.github.HenriqueMichelini.craftalism_economy.economy.util.Validators;
+import io.github.HenriqueMichelini.craftalism_economy.economy.validators.CommandValidator;
+import io.github.HenriqueMichelini.craftalism_economy.economy.validators.PlayerValidator;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -27,23 +29,26 @@ public class PayCommand implements CommandExecutor {
     private final EconomyManager economyManager;
     private final BalanceManager balanceManager;
     private final JavaPlugin plugin;
-    private final MoneyFormat moneyFormat;
-    private final Validators validators;
+    private final CurrencyFormatter currencyFormatter;
 
-    public PayCommand(EconomyManager economyManager, BalanceManager balanceManager, JavaPlugin plugin, MoneyFormat moneyFormat, Validators validators) {
+    private final PlayerValidator playerValidator;
+    private final CommandValidator commandValidator;
+
+    public PayCommand(EconomyManager economyManager, BalanceManager balanceManager, JavaPlugin plugin, CurrencyFormatter currencyFormatter) {
         this.economyManager = economyManager;
         this.balanceManager = balanceManager;
         this.plugin = plugin;
-        this.moneyFormat = moneyFormat;
-        this.validators = validators;
+        this.currencyFormatter = currencyFormatter;
+        this.playerValidator = new PlayerValidator();
+        this.commandValidator = new CommandValidator();
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
-        if (!validators.isNotPlayer(sender)) return false;
+        if (!playerValidator.isSenderAPlayer(sender)) return false;
         Player payer = (Player) sender;
 
-        if (!validators.validateArguments(payer, args, args.length, "asdasdasdas")) return false;
+        if (!commandValidator.validateArguments(payer, args, args.length, "asdasdasdas")) return false;
 
         Optional<UUID> payeeUuid = resolvePayeeUuid(args[0]);
         if (payeeUuid.isEmpty()) {
@@ -53,7 +58,7 @@ public class PayCommand implements CommandExecutor {
 
         if (!checkIfPlayerIsNotPayingHimself(payer, payeeUuid.get())) return false;
 
-        Optional<Long> amountOpt = moneyFormat.parseAmount(payer, args[1]);
+        Optional<Long> amountOpt = CurrencyParser.parseAmount(payer, args[1]);
         if (amountOpt.isEmpty()) return false;
         long amount = amountOpt.get();
 
@@ -114,7 +119,7 @@ public class PayCommand implements CommandExecutor {
     }
 
     private void sendSuccessMessages(Player payer, UUID payeeUuid, long amount) {
-        String formattedAmount = moneyFormat.formatPrice(amount);
+        String formattedAmount = currencyFormatter.formatCurrency(amount);
         String payeeName = getPlayerName(payeeUuid);
 
         payer.sendMessage(buildPaymentMessage("You paid ", payeeName, " ", formattedAmount));
@@ -151,7 +156,7 @@ public class PayCommand implements CommandExecutor {
         plugin.getLogger().info(String.format("%s paid %s %s",
                 payer.getName(),
                 getPlayerName(payeeUuid),
-                moneyFormat.formatPrice(amount)));
+                currencyFormatter.formatCurrency(amount)));
     }
 
     private Component errorComponent(String text) {

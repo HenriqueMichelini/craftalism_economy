@@ -1,8 +1,8 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
+import io.github.HenriqueMichelini.craftalism_economy.economy.currency.CurrencyFormatter;
 import io.github.HenriqueMichelini.craftalism_economy.economy.managers.BalanceManager;
-import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
-import io.github.HenriqueMichelini.craftalism_economy.economy.util.Validators;
+import io.github.HenriqueMichelini.craftalism_economy.economy.validators.PlayerValidator;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
@@ -24,21 +24,19 @@ public class BalanceCommand implements CommandExecutor {
 
     private final BalanceManager balanceManager;
     private final JavaPlugin plugin;
-    private final MoneyFormat moneyFormat;
-    private final Validators validators;
+    private final CurrencyFormatter currencyFormatter;
+    private final PlayerValidator playerValidator;
 
-    private long balance;
-
-    public BalanceCommand(BalanceManager balanceManager, JavaPlugin plugin, MoneyFormat moneyFormat, Validators validators) {
+    public BalanceCommand(BalanceManager balanceManager, JavaPlugin plugin, CurrencyFormatter currencyFormatter) {
         this.balanceManager = balanceManager;
         this.plugin = plugin;
-        this.moneyFormat = moneyFormat;
-        this.validators = validators;
+        this.currencyFormatter = currencyFormatter;
+        this.playerValidator = new PlayerValidator();
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, String @NotNull [] args) {
-        if (!validators.isPlayer(sender)) {
+        if (!playerValidator.isSenderAPlayer(sender)) {
             return false;
         }
 
@@ -66,15 +64,14 @@ public class BalanceCommand implements CommandExecutor {
     }
 
     private boolean showOwnBalance(Player player) {
-        if(balanceManager.checkIfBalanceExists(player.getUniqueId())) {
-            this.balance = balanceManager.getBalance(player.getUniqueId());
-        }
-        sendOwnBalanceMessage(player, this.balance);
+        if(!balanceManager.checkIfBalanceExists(player.getUniqueId())) return false;
+        long balance = balanceManager.getBalance(player.getUniqueId());
+        sendOwnBalanceMessage(player, balance);
         return true;
     }
 
     private void sendOwnBalanceMessage(Player player, long balance) {
-        String formatted = moneyFormat.formatPrice(balance);
+        String formatted = currencyFormatter.formatCurrency(balance);
         player.sendMessage(
                 Component.text("Your balance is: ")
                         .color(PREFIX_COLOR)
@@ -83,7 +80,7 @@ public class BalanceCommand implements CommandExecutor {
     }
 
     private void showOtherBalance(Player requester, String targetName) {
-        Optional<OfflinePlayer> player = validators.resolvePlayer(requester, targetName);
+        Optional<OfflinePlayer> player = playerValidator.resolvePlayer(requester, targetName);
 
         if (player.isEmpty()) {
             sendPlayerNotFoundMessage(requester);
@@ -92,14 +89,14 @@ public class BalanceCommand implements CommandExecutor {
 
         UUID uuid = player.get().getUniqueId();
 
-        this.balance = balanceManager.getBalance(uuid);
+        long balance = balanceManager.getBalance(uuid);
 
         logShowOtherBalance(requester.getName(), targetName);
         sendOtherBalanceMessage(requester, targetName, balance);
     }
 
     private void sendOtherBalanceMessage(Player recipient, String targetName, long balance) {
-        String formatted = moneyFormat.formatPrice(balance);
+        String formatted = currencyFormatter.formatCurrency(balance);
         recipient.sendMessage(
                 Component.text(targetName + "'s balance is: ")
                         .color(PREFIX_COLOR)
@@ -121,7 +118,7 @@ public class BalanceCommand implements CommandExecutor {
     }
 
     private void logShowOwnBalance(String requester) {
-        plugin.getLogger().info("[CE.Balance] " + requester + " checked its own balance");
+        plugin.getLogger().info("[CE.Balance] " + requester + " checked their own balance");
     }
 
     private void logShowOtherBalance(String requester, String target) {

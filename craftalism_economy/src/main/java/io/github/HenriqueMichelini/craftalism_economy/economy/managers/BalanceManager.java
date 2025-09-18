@@ -2,15 +2,14 @@ package io.github.HenriqueMichelini.craftalism_economy.economy.managers;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 public class BalanceManager {
@@ -18,15 +17,13 @@ public class BalanceManager {
 
     private final File balancesFile;
     private final FileConfiguration balancesConfig;
-    private final HashMap<UUID, Long> allBalances = new HashMap<>();
-    private final long defaultBalance;
+    private final ConcurrentHashMap<UUID, Long> allBalances = new ConcurrentHashMap<>();
     private final JavaPlugin plugin;
 
 
-    public BalanceManager(File balancesFile, FileConfiguration balancesConfig, long defaultBalance, JavaPlugin plugin) {
+    public BalanceManager(File balancesFile, FileConfiguration balancesConfig, JavaPlugin plugin) {
         this.balancesFile = balancesFile;
         this.balancesConfig = balancesConfig;
-        this.defaultBalance = defaultBalance;
         this.plugin = plugin;
 
         createBalancesFile();
@@ -107,7 +104,7 @@ public class BalanceManager {
         allBalances.put(playerUUID, amount);
     }
 
-    public HashMap<UUID, Long> getAllBalances() {
+    public ConcurrentHashMap<UUID, Long> getAllBalances() {
         return this.allBalances;
     }
 }

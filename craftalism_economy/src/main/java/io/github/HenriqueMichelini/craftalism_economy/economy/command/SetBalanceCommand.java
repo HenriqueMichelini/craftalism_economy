@@ -1,8 +1,10 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
+import io.github.HenriqueMichelini.craftalism_economy.economy.currency.CurrencyFormatter;
+import io.github.HenriqueMichelini.craftalism_economy.economy.currency.CurrencyParser;
 import io.github.HenriqueMichelini.craftalism_economy.economy.managers.BalanceManager;
-import io.github.HenriqueMichelini.craftalism_economy.economy.util.MoneyFormat;
-import io.github.HenriqueMichelini.craftalism_economy.economy.util.Validators;
+import io.github.HenriqueMichelini.craftalism_economy.economy.validators.CommandValidator;
+import io.github.HenriqueMichelini.craftalism_economy.economy.validators.PlayerValidator;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -24,14 +26,17 @@ public class SetBalanceCommand implements CommandExecutor {
 
     private final BalanceManager balanceManager;
     private final JavaPlugin plugin;
-    private final MoneyFormat moneyFormat;
-    private final Validators validators;
+    private final CurrencyFormatter currencyFormatter;
 
-    public SetBalanceCommand(BalanceManager balanceManager, JavaPlugin plugin, MoneyFormat moneyFormat, Validators validators) {
+    private final PlayerValidator playerValidator;
+    private final CommandValidator commandValidator;
+
+    public SetBalanceCommand(BalanceManager balanceManager, JavaPlugin plugin, CurrencyFormatter currencyFormatter) {
         this.balanceManager = balanceManager;
         this.plugin = plugin;
-        this.moneyFormat = moneyFormat;
-        this.validators = validators;
+        this.currencyFormatter = currencyFormatter;
+        this.playerValidator = new PlayerValidator();
+        this.commandValidator = new CommandValidator();
     }
 
     @Override
@@ -39,18 +44,18 @@ public class SetBalanceCommand implements CommandExecutor {
         Optional<Long> amount;
         Player player = (Player) sender;
 
-        if (!validators.validateArguments(sender, args, args.length, "use /setbalance <player name> <value>")) return false;
+        if (!commandValidator.validateArguments(sender, args, args.length, "use /setbalance <player name> <value>")) return false;
 
         String playerName = args[0];
         String amountToSet = args[1];
 
-        if (!validators.isNotPlayer(sender)) return false;
+        if (!playerValidator.isSenderAPlayer(sender)) return false;
 
-        Optional<OfflinePlayer> target = validators.resolvePlayer(player, playerName);
+        Optional<OfflinePlayer> target = playerValidator.resolvePlayer(player, playerName);
 
         if(target.isEmpty()) return false;
 
-        amount = moneyFormat.parseAmount(player, amountToSet);
+        amount = CurrencyParser.parseAmount(player, amountToSet);
 
         if (amount.isEmpty()) {
             sender.sendMessage("Error: Amount missing!");
@@ -75,7 +80,7 @@ public class SetBalanceCommand implements CommandExecutor {
     }
 
     private void sendConfirmationMessages(CommandSender sender, OfflinePlayer target, long amount) {
-        String formattedAmount = moneyFormat.formatPrice(amount);
+        String formattedAmount = currencyFormatter.formatCurrency(amount);
         String targetName = Optional.ofNullable(target.getName()).orElse("Unknown Player");
 
         sender.sendMessage(buildMessage("Set ", targetName, "'s balance to ", formattedAmount));
@@ -102,7 +107,7 @@ public class SetBalanceCommand implements CommandExecutor {
         String logMessage = String.format("%s set %s's balance to %s",
                 sender.getName(),
                 Optional.ofNullable(target.getName()).orElse("UNKNOWN"),
-                moneyFormat.formatPrice(amount));
+                currencyFormatter.formatCurrency(amount));
 
         plugin.getLogger().info(logMessage);
     }

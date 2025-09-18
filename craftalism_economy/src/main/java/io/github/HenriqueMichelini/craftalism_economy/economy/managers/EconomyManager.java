@@ -1,20 +1,20 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.managers;
 
-import io.github.HenriqueMichelini.craftalism_economy.economy.util.Validators;
+import io.github.HenriqueMichelini.craftalism_economy.economy.validators.EconomyValidator;
 
 import java.util.UUID;
 
 public class EconomyManager {
-    private final Validators validators;
     private final BalanceManager balanceManager;
+    private final EconomyValidator economyValidator;
 
-    public EconomyManager(Validators validators, BalanceManager balanceManager) {
-        this.validators = validators;
+    public EconomyManager(BalanceManager balanceManager) {
         this.balanceManager = balanceManager;
+        this.economyValidator = new EconomyValidator(balanceManager);
     }
 
     public boolean deposit(UUID playerUUID, long amount) {
-        if (validators.isValidAmount(amount)) {
+        if (economyValidator.isValidAmount(amount)) {
             balanceManager.setBalance(playerUUID, balanceManager.getBalance(playerUUID) + amount);
             return true;
         }
@@ -22,7 +22,7 @@ public class EconomyManager {
     }
 
     public boolean withdraw(UUID playerUUID, long amount) {
-        if (validators.isValidAmount(amount) && validators.hasSufficientFunds(playerUUID, amount)) {
+        if (economyValidator.isValidAmount(amount) && economyValidator.hasSufficientFunds(playerUUID, amount)) {
             balanceManager.setBalance(playerUUID, balanceManager.getBalance(playerUUID)- amount);
             return true;
         }
@@ -30,7 +30,7 @@ public class EconomyManager {
     }
 
     public boolean transferBalance(UUID from, UUID to, long amount) {
-        if (validators.isValidAmount(amount) && validators.hasSufficientFunds(from, amount)) {
+        if (economyValidator.isValidAmount(amount) && economyValidator.hasSufficientFunds(from, amount)) {
             withdraw(from, amount);
             deposit(to, amount);
             return true;
