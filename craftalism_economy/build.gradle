@@ -19,6 +19,22 @@ repositories {
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
+    testImplementation(platform('org.junit:junit-bom:5.13.4'))
+    testImplementation('org.junit.jupiter:junit-jupiter')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+    testImplementation "org.mockito:mockito-core:5.19.0"
+    testImplementation 'org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.0.0'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+    jvmArgs = [
+            "-XX:+EnableDynamicAgentLoading",
+            "-Djdk.instrument.traceUsage"
+    ]
 }
 
 def targetJavaVersion = 21

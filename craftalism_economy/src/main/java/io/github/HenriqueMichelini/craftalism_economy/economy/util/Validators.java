@@ -26,13 +26,50 @@ public class Validators {
             return Optional.empty();
         }
 
-        OfflinePlayer player = Bukkit.getOfflinePlayer(username);
-        if (player.hasPlayedBefore() || player.isOnline()) {
-            return Optional.of(player);
+        Player onlinePlayer = Bukkit.getPlayerExact(username);
+        if (onlinePlayer != null) {
+            return Optional.of(onlinePlayer);
         }
 
-        requester.sendMessage(Component.text("Player not found.").color(ERROR_COLOR));
+        OfflinePlayer offlinePlayer;
+        try {
+            offlinePlayer = Bukkit.getOfflinePlayerIfCached(username);
+        } catch (Exception e) {
+            offlinePlayer = Bukkit.getOfflinePlayer(username);
+        }
+
+        if (offlinePlayer != null) {
+            boolean isRealPlayer = (offlinePlayer.getUniqueId().version() != 0) && offlinePlayer.hasPlayedBefore();
+            if (isRealPlayer) {
+                return Optional.of(offlinePlayer);
+            }
+        }
+
+        requester.sendMessage(Component.text("Player '" + username + "' not found. They must have joined this server at least once.").color(ERROR_COLOR));
         return Optional.empty();
+    }
+
+//    public Optional<OfflinePlayer> resolvePlayer(Player requester, @Nullable String username) {
+//        if (username == null || username.isBlank()) {
+//            requester.sendMessage(Component.text("Username cannot be empty.").color(ERROR_COLOR));
+//            return Optional.empty();
+//        }
+//
+//        OfflinePlayer player = Bukkit.getOfflinePlayer(username);
+//        if (player.hasPlayedBefore() || player.isOnline()) {
+//            return Optional.of(player);
+//        }
+//
+//        requester.sendMessage(Component.text("Player not found.").color(ERROR_COLOR));
+//        return Optional.empty();
+//    }
+
+    public boolean validateIsPlayer(CommandSender sender) {
+        if (isPlayer(sender)) {
+            return true;
+        }
+        sender.sendMessage(Component.text("This command can only be executed by a player.").color(ERROR_COLOR));
+        return false;
     }
 
     public boolean isPlayer(CommandSender sender) {
@@ -42,12 +79,6 @@ public class Validators {
     public boolean validateArguments(CommandSender sender, String[] args, int numOfArgs, String usageMessage) {
         if (args.length == numOfArgs) return true;
         sender.sendMessage(Component.text(usageMessage).color(ERROR_COLOR));
-        return false;
-    }
-
-    public boolean validateArguments(Player player, String[] args, int numOfArgs, String usageMessage) {
-        if (args.length == numOfArgs) return true;
-        player.sendMessage(Component.text(usageMessage).color(ERROR_COLOR));
         return false;
     }
 
