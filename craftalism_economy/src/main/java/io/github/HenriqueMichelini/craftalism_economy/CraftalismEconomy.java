@@ -123,7 +123,7 @@ public final class CraftalismEconomy extends JavaPlugin {
 
     public CommandValidator getCommandValidator() { return new CommandValidator(); }
 
-    public EconomyValidator getEconomyValidator() { return new EconomyValidator(balanceManager); }
+    public EconomyValidator getEconomyValidator() { return new EconomyValidator(); }
 
     public long getDefaultBalance() {
         return defaultBalance;

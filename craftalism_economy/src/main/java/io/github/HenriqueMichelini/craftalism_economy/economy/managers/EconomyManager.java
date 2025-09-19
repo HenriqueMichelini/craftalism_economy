@@ -10,11 +10,11 @@ public class EconomyManager {
 
     public EconomyManager(BalanceManager balanceManager) {
         this.balanceManager = balanceManager;
-        this.economyValidator = new EconomyValidator(balanceManager);
+        this.economyValidator = new EconomyValidator();
     }
 
     public boolean deposit(UUID playerUUID, long amount) {
-        if (economyValidator.isValidAmount(amount)) {
+        if (economyValidator.isGreaterThanZero(amount)) {
             balanceManager.setBalance(playerUUID, balanceManager.getBalance(playerUUID) + amount);
             return true;
         }
@@ -22,19 +22,34 @@ public class EconomyManager {
     }
 
     public boolean withdraw(UUID playerUUID, long amount) {
-        if (economyValidator.isValidAmount(amount) && economyValidator.hasSufficientFunds(playerUUID, amount)) {
-            balanceManager.setBalance(playerUUID, balanceManager.getBalance(playerUUID)- amount);
-            return true;
+        if (!economyValidator.isGreaterThanZero(amount)) {
+            return false;
         }
-        return false;
+
+        long currentBalance = balanceManager.getBalance(playerUUID);
+
+        if (!economyValidator.hasSufficientFunds(currentBalance, amount)) {
+            return false;
+        }
+
+        balanceManager.setBalance(playerUUID, currentBalance - amount);
+        return true;
     }
 
     public boolean transferBalance(UUID from, UUID to, long amount) {
-        if (economyValidator.isValidAmount(amount) && economyValidator.hasSufficientFunds(from, amount)) {
-            withdraw(from, amount);
-            deposit(to, amount);
-            return true;
+        if (!economyValidator.isGreaterThanZero(amount)) {
+            return false;
         }
-        return false;
+
+        long fromBalance = balanceManager.getBalance(from);
+        long toBalance = balanceManager.getBalance(to);
+
+        if (!economyValidator.hasSufficientFunds(fromBalance, amount)) {
+            return false;
+        }
+
+        balanceManager.setBalance(from, fromBalance - amount);
+        balanceManager.setBalance(to, toBalance + amount);
+        return true;
     }
 }
