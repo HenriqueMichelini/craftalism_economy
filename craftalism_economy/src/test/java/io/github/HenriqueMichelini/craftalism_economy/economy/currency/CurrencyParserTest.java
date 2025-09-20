@@ -2,10 +2,7 @@ package io.github.HenriqueMichelini.craftalism_economy.economy.currency;
 
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -27,9 +24,16 @@ class CurrencyParserTest {
     @Mock
     private Player player;
 
+    private AutoCloseable mocks;
+
     @BeforeEach
     void setUp() {
-        AutoCloseable mocks = MockitoAnnotations.openMocks(this);
+        mocks = MockitoAnnotations.openMocks(this);
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        mocks.close();
     }
 
     @Nested

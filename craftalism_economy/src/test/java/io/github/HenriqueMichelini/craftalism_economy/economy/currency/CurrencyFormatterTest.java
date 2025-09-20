@@ -235,7 +235,7 @@ class CurrencyFormatterTest {
             // When & Then
             IllegalArgumentException exception = assertThrows(
                     IllegalArgumentException.class,
-                    () -> formatter.formatCurrency((BigDecimal) null)
+                    () -> formatter.formatCurrency(null)
             );
             assertEquals("Amount cannot be null", exception.getMessage());
         }

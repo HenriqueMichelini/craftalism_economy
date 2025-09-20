@@ -1,10 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.managers;
 
 import io.github.HenriqueMichelini.craftalism_economy.economy.validators.EconomyValidator;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
@@ -33,11 +30,18 @@ class EconomyManagerTest {
     private EconomyManager economyManager;
     private UUID testPlayer;
 
+    private AutoCloseable mocks;
+
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        mocks = MockitoAnnotations.openMocks(this);
         economyManager = new EconomyManager(balanceManager, economyValidator);
         testPlayer = UUID.randomUUID();
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        mocks.close();
     }
 
     @Nested
