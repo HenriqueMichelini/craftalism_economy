@@ -1,5 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.managers;
 
+import io.github.HenriqueMichelini.craftalism_economy.economy.validators.EconomyValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +16,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@DisplayName("EconomyManager Tests")
 class EconomyManagerTest {
 
     private static final long INITIAL_BALANCE = 1000L;
@@ -25,14 +27,55 @@ class EconomyManagerTest {
     @Mock
     private BalanceManager balanceManager;
 
+    @Mock
+    private EconomyValidator economyValidator;
+
     private EconomyManager economyManager;
     private UUID testPlayer;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        economyManager = new EconomyManager(balanceManager);
+        economyManager = new EconomyManager(balanceManager, economyValidator);
         testPlayer = UUID.randomUUID();
+    }
+
+    @Nested
+    @DisplayName("Constructor Tests")
+    class ConstructorTests {
+
+        @Test
+        @DisplayName("Should throw exception when BalanceManager is null")
+        void constructor_NullBalanceManager_ThrowsException() {
+            // When & Then
+            IllegalArgumentException exception = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> new EconomyManager(null, economyValidator),
+                    "Should throw exception when BalanceManager is null"
+            );
+
+            assertEquals("BalanceManager cannot be null", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("Should throw exception when EconomyValidator is null")
+        void constructor_NullEconomyValidator_ThrowsException() {
+            // When & Then
+            IllegalArgumentException exception = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> new EconomyManager(balanceManager, null),
+                    "Should throw exception when EconomyValidator is null"
+            );
+
+            assertEquals("EconomyValidator cannot be null", exception.getMessage());
+        }
+
+        @Test
+        @DisplayName("Should create instance with valid dependencies")
+        void constructor_ValidDependencies_CreatesInstance() {
+            // When & Then
+            assertDoesNotThrow(() -> new EconomyManager(balanceManager, economyValidator));
+        }
     }
 
     @Nested
@@ -43,6 +86,7 @@ class EconomyManagerTest {
         @DisplayName("Should successfully deposit valid amount")
         void deposit_ValidAmount_ReturnsTrue() {
             // Given
+            when(economyValidator.isGreaterThanZero(DEPOSIT_AMOUNT)).thenReturn(true);
             when(balanceManager.getBalance(testPlayer)).thenReturn(INITIAL_BALANCE);
 
             // When
@@ -50,21 +94,43 @@ class EconomyManagerTest {
 
             // Then
             assertTrue(result, "Deposit should succeed with valid amount");
+
+            // Verify validator was called
+            verify(economyValidator).isGreaterThanZero(DEPOSIT_AMOUNT);
+
+            // Verify balance operations
             verify(balanceManager).getBalance(testPlayer);
             verify(balanceManager).setBalance(testPlayer, INITIAL_BALANCE + DEPOSIT_AMOUNT);
             verifyNoMoreInteractions(balanceManager);
         }
 
         @Test
+        @DisplayName("Should fail when validator rejects amount")
+        void deposit_ValidatorRejectsAmount_ReturnsFalse() {
+            // Given
+            when(economyValidator.isGreaterThanZero(DEPOSIT_AMOUNT)).thenReturn(false);
+
+            // When
+            boolean result = economyManager.deposit(testPlayer, DEPOSIT_AMOUNT);
+
+            // Then
+            assertFalse(result, "Deposit should fail when validator rejects amount");
+            verify(economyValidator).isGreaterThanZero(DEPOSIT_AMOUNT);
+            verifyNoInteractions(balanceManager);
+        }
+
+        @Test
         @DisplayName("Should handle zero deposit amount")
         void deposit_ZeroAmount_ReturnsFalse() {
+            // Given
+            when(economyValidator.isGreaterThanZero(0L)).thenReturn(false);
+
             // When
             boolean result = economyManager.deposit(testPlayer, 0L);
 
             // Then
             assertFalse(result, "Deposit should fail with zero amount");
-
-            // Verify NO interactions with balanceManager since amount is zero
+            verify(economyValidator).isGreaterThanZero(0L);
             verifyNoInteractions(balanceManager);
         }
 
@@ -72,36 +138,66 @@ class EconomyManagerTest {
         @ValueSource(longs = {-1L, -10L, -100L, Long.MIN_VALUE})
         @DisplayName("Should reject negative deposit amounts")
         void deposit_NegativeAmount_ReturnsFalse(long negativeAmount) {
+            // Given
+            when(economyValidator.isGreaterThanZero(negativeAmount)).thenReturn(false);
+
             // When
             boolean result = economyManager.deposit(testPlayer, negativeAmount);
 
             // Then
             assertFalse(result, "Deposit should fail with negative amount: " + negativeAmount);
-            verify(balanceManager, never()).getBalance(any(UUID.class));
+            verify(economyValidator).isGreaterThanZero(negativeAmount);
+            verifyNoInteractions(balanceManager);
+        }
+
+        @Test
+        @DisplayName("Should prevent overflow in deposit")
+        void deposit_PotentialOverflow_ReturnsFalse() {
+            // Given - Balance near Long.MAX_VALUE that would overflow
+            long nearMaxBalance = Long.MAX_VALUE - 100L;
+            long largeDeposit = 200L; // This would cause overflow
+
+            when(economyValidator.isGreaterThanZero(largeDeposit)).thenReturn(true);
+            when(balanceManager.getBalance(testPlayer)).thenReturn(nearMaxBalance);
+
+            // When
+            boolean result = economyManager.deposit(testPlayer, largeDeposit);
+
+            // Then
+            assertFalse(result, "Deposit should fail to prevent overflow");
+            verify(economyValidator).isGreaterThanZero(largeDeposit);
+            verify(balanceManager).getBalance(testPlayer);
             verify(balanceManager, never()).setBalance(any(UUID.class), anyLong());
         }
 
         @Test
-        @DisplayName("Should handle potential overflow in deposit")
-        void deposit_PotentialOverflow_HandledCorrectly() {
-            // Given - Balance near Long.MAX_VALUE
-            long nearMaxBalance = Long.MAX_VALUE - 100L;
-            when(balanceManager.getBalance(testPlayer)).thenReturn(nearMaxBalance);
+        @DisplayName("Should allow deposit that doesn't cause overflow")
+        void deposit_NoOverflow_ReturnsTrue() {
+            // Given - Balance that won't overflow
+            long balance = Long.MAX_VALUE - 1000L;
+            long safeDeposit = 500L;
 
-            // When & Then - Should not crash when overflow might occur
-            assertDoesNotThrow(() -> {
-                economyManager.deposit(testPlayer, 200L);
-                // The result behavior is implementation dependent - could be true or false
-                // Main goal is ensuring no exception is thrown
-            });
-            verify(balanceManager).getBalance(testPlayer);
+            when(economyValidator.isGreaterThanZero(safeDeposit)).thenReturn(true);
+            when(balanceManager.getBalance(testPlayer)).thenReturn(balance);
+
+            // When
+            boolean result = economyManager.deposit(testPlayer, safeDeposit);
+
+            // Then
+            assertTrue(result, "Deposit should succeed when no overflow occurs");
+            verify(balanceManager).setBalance(testPlayer, balance + safeDeposit);
         }
 
         @Test
         @DisplayName("Should handle null player UUID")
-        void deposit_NullPlayer_HandledGracefully() {
-            // When & Then - Should not crash with null UUID
-            assertDoesNotThrow(() -> economyManager.deposit(null, DEPOSIT_AMOUNT));
+        void deposit_NullPlayer_ReturnsFalse() {
+            // When
+            boolean result = economyManager.deposit(null, DEPOSIT_AMOUNT);
+
+            // Then
+            assertFalse(result, "Deposit should fail with null player UUID");
+            verifyNoInteractions(economyValidator);
+            verifyNoInteractions(balanceManager);
         }
     }
 
@@ -113,15 +209,35 @@ class EconomyManagerTest {
         @DisplayName("Should successfully withdraw with sufficient funds")
         void withdraw_SufficientFunds_ReturnsTrue() {
             // Given
+            when(economyValidator.isGreaterThanZero(WITHDRAW_AMOUNT)).thenReturn(true);
             when(balanceManager.getBalance(testPlayer)).thenReturn(INITIAL_BALANCE);
+            when(economyValidator.hasSufficientFunds(INITIAL_BALANCE, WITHDRAW_AMOUNT)).thenReturn(true);
 
             // When
             boolean result = economyManager.withdraw(testPlayer, WITHDRAW_AMOUNT);
 
             // Then
             assertTrue(result, "Withdraw should succeed with sufficient funds");
-            verify(balanceManager, times(1)).getBalance(testPlayer); // Now only 1 call!
+
+            verify(economyValidator).isGreaterThanZero(WITHDRAW_AMOUNT);
+            verify(balanceManager).getBalance(testPlayer);
+            verify(economyValidator).hasSufficientFunds(INITIAL_BALANCE, WITHDRAW_AMOUNT);
             verify(balanceManager).setBalance(testPlayer, INITIAL_BALANCE - WITHDRAW_AMOUNT);
+        }
+
+        @Test
+        @DisplayName("Should fail when validator rejects amount")
+        void withdraw_ValidatorRejectsAmount_ReturnsFalse() {
+            // Given
+            when(economyValidator.isGreaterThanZero(WITHDRAW_AMOUNT)).thenReturn(false);
+
+            // When
+            boolean result = economyManager.withdraw(testPlayer, WITHDRAW_AMOUNT);
+
+            // Then
+            assertFalse(result, "Withdraw should fail when validator rejects amount");
+            verify(economyValidator).isGreaterThanZero(WITHDRAW_AMOUNT);
+            verifyNoInteractions(balanceManager);
         }
 
         @Test
@@ -129,14 +245,18 @@ class EconomyManagerTest {
         void withdraw_InsufficientFunds_ReturnsFalse() {
             // Given
             long smallBalance = 50L;
+            when(economyValidator.isGreaterThanZero(WITHDRAW_AMOUNT)).thenReturn(true);
             when(balanceManager.getBalance(testPlayer)).thenReturn(smallBalance);
+            when(economyValidator.hasSufficientFunds(smallBalance, WITHDRAW_AMOUNT)).thenReturn(false);
 
             // When
             boolean result = economyManager.withdraw(testPlayer, WITHDRAW_AMOUNT);
 
             // Then
             assertFalse(result, "Withdraw should fail with insufficient funds");
+            verify(economyValidator).isGreaterThanZero(WITHDRAW_AMOUNT);
             verify(balanceManager).getBalance(testPlayer);
+            verify(economyValidator).hasSufficientFunds(smallBalance, WITHDRAW_AMOUNT);
             verify(balanceManager, never()).setBalance(any(UUID.class), anyLong());
         }
 
@@ -144,7 +264,9 @@ class EconomyManagerTest {
         @DisplayName("Should allow exact balance withdrawal")
         void withdraw_ExactBalance_ReturnsTrue() {
             // Given
+            when(economyValidator.isGreaterThanZero(WITHDRAW_AMOUNT)).thenReturn(true);
             when(balanceManager.getBalance(testPlayer)).thenReturn(WITHDRAW_AMOUNT);
+            when(economyValidator.hasSufficientFunds(WITHDRAW_AMOUNT, WITHDRAW_AMOUNT)).thenReturn(true);
 
             // When
             boolean result = economyManager.withdraw(testPlayer, WITHDRAW_AMOUNT);
@@ -155,35 +277,15 @@ class EconomyManagerTest {
         }
 
         @Test
-        @DisplayName("Should handle zero withdrawal amount")
-        void withdraw_ZeroAmount_ReturnsFalse() {
-            // When
-            boolean result = economyManager.withdraw(testPlayer, 0L);
-
-            // Then
-            assertFalse(result, "Withdraw should fail with zero amount");
-            verify(balanceManager, never()).getBalance(any(UUID.class));
-            verify(balanceManager, never()).setBalance(any(UUID.class), anyLong());
-        }
-
-        @ParameterizedTest
-        @ValueSource(longs = {-1L, -50L, -1000L, Long.MIN_VALUE})
-        @DisplayName("Should reject negative withdrawal amounts")
-        void withdraw_NegativeAmount_ReturnsFalse(long negativeAmount) {
-            // When
-            boolean result = economyManager.withdraw(testPlayer, negativeAmount);
-
-            // Then
-            assertFalse(result, "Withdraw should fail with negative amount: " + negativeAmount);
-            verify(balanceManager, never()).getBalance(any(UUID.class));
-            verify(balanceManager, never()).setBalance(any(UUID.class), anyLong());
-        }
-
-        @Test
         @DisplayName("Should handle null player UUID")
-        void withdraw_NullPlayer_HandledGracefully() {
-            // When & Then - Should not crash with null UUID
-            assertDoesNotThrow(() -> economyManager.withdraw(null, WITHDRAW_AMOUNT));
+        void withdraw_NullPlayer_ReturnsFalse() {
+            // When
+            boolean result = economyManager.withdraw(null, WITHDRAW_AMOUNT);
+
+            // Then
+            assertFalse(result, "Withdraw should fail with null player UUID");
+            verifyNoInteractions(economyValidator);
+            verifyNoInteractions(balanceManager);
         }
     }
 
@@ -203,9 +305,12 @@ class EconomyManagerTest {
         @Test
         @DisplayName("Should successfully transfer with sufficient funds")
         void transferBalance_Success_ReturnsTrue() {
-            // Given - Only 1 call for each player
+            // Given
+            long toBalance = 100L;
+            when(economyValidator.isGreaterThanZero(TRANSFER_AMOUNT)).thenReturn(true);
             when(balanceManager.getBalance(fromPlayer)).thenReturn(INITIAL_BALANCE);
-            when(balanceManager.getBalance(toPlayer)).thenReturn(100L);
+            when(balanceManager.getBalance(toPlayer)).thenReturn(toBalance);
+            when(economyValidator.hasSufficientFunds(INITIAL_BALANCE, TRANSFER_AMOUNT)).thenReturn(true);
 
             // When
             boolean result = economyManager.transferBalance(fromPlayer, toPlayer, TRANSFER_AMOUNT);
@@ -213,31 +318,37 @@ class EconomyManagerTest {
             // Then
             assertTrue(result, "Transfer should succeed with sufficient funds");
 
-            // Verify total calls - now only 1 for each player!
-            verify(balanceManager, times(1)).getBalance(fromPlayer);
-            verify(balanceManager, times(1)).getBalance(toPlayer);
+            verify(economyValidator).isGreaterThanZero(TRANSFER_AMOUNT);
+            verify(balanceManager).getBalance(fromPlayer);
+            verify(balanceManager).getBalance(toPlayer);
+            verify(economyValidator).hasSufficientFunds(INITIAL_BALANCE, TRANSFER_AMOUNT);
             verify(balanceManager).setBalance(fromPlayer, INITIAL_BALANCE - TRANSFER_AMOUNT);
-            verify(balanceManager).setBalance(toPlayer, 100L + TRANSFER_AMOUNT);
+            verify(balanceManager).setBalance(toPlayer, toBalance + TRANSFER_AMOUNT);
+        }
 
-            // Verify order of operations
-            InOrder inOrder = inOrder(balanceManager);
+        @Test
+        @DisplayName("Should fail when validator rejects amount")
+        void transferBalance_ValidatorRejectsAmount_ReturnsFalse() {
+            // Given
+            when(economyValidator.isGreaterThanZero(TRANSFER_AMOUNT)).thenReturn(false);
 
-            // First get both balances (order might be fromPlayer then toPlayer, or vice versa)
-            inOrder.verify(balanceManager).getBalance(fromPlayer);
-            inOrder.verify(balanceManager).getBalance(toPlayer);
+            // When
+            boolean result = economyManager.transferBalance(fromPlayer, toPlayer, TRANSFER_AMOUNT);
 
-            // Then update both balances
-            inOrder.verify(balanceManager).setBalance(fromPlayer, INITIAL_BALANCE - TRANSFER_AMOUNT);
-            inOrder.verify(balanceManager).setBalance(toPlayer, 100L + TRANSFER_AMOUNT);
-
-            verifyNoMoreInteractions(balanceManager);
+            // Then
+            assertFalse(result, "Transfer should fail when validator rejects amount");
+            verify(economyValidator).isGreaterThanZero(TRANSFER_AMOUNT);
+            verifyNoInteractions(balanceManager);
         }
 
         @Test
         @DisplayName("Should fail transfer with insufficient funds")
         void transferBalance_InsufficientFunds_ReturnsFalse() {
             // Given
-            when(balanceManager.getBalance(fromPlayer)).thenReturn(50L); // Less than transfer amount
+            long smallBalance = 50L;
+            when(economyValidator.isGreaterThanZero(TRANSFER_AMOUNT)).thenReturn(true);
+            when(balanceManager.getBalance(fromPlayer)).thenReturn(smallBalance);
+            when(economyValidator.hasSufficientFunds(smallBalance, TRANSFER_AMOUNT)).thenReturn(false);
 
             // When
             boolean result = economyManager.transferBalance(fromPlayer, toPlayer, TRANSFER_AMOUNT);
@@ -245,68 +356,67 @@ class EconomyManagerTest {
             // Then
             assertFalse(result, "Transfer should fail with insufficient funds");
             verify(balanceManager).getBalance(fromPlayer);
+            verify(economyValidator).hasSufficientFunds(smallBalance, TRANSFER_AMOUNT);
             verify(balanceManager, never()).setBalance(any(UUID.class), anyLong());
         }
 
         @Test
-        @DisplayName("Should handle transfer to same player")
-        void transferBalance_SamePlayer_HandledCorrectly() {
+        @DisplayName("Should prevent self-transfer")
+        void transferBalance_SamePlayer_ReturnsFalse() {
             // Given
-            when(balanceManager.getBalance(fromPlayer)).thenReturn(INITIAL_BALANCE);
+            when(economyValidator.isGreaterThanZero(TRANSFER_AMOUNT)).thenReturn(true);
 
             // When
             boolean result = economyManager.transferBalance(fromPlayer, fromPlayer, TRANSFER_AMOUNT);
 
-            // Then - Document the behavior for same-player transfers
-            // Implementation could either allow it (no-op) or reject it
-            verify(balanceManager, atLeastOnce()).getBalance(fromPlayer);
-
-            // Note: The exact behavior (true/false) is implementation dependent
-            // This test ensures the method handles same-player transfers gracefully
+            // Then
+            assertFalse(result, "Transfer should fail when transferring to same player");
+            verify(economyValidator).isGreaterThanZero(TRANSFER_AMOUNT);
+            verifyNoInteractions(balanceManager);
         }
 
         @Test
-        @DisplayName("Should handle zero transfer amount")
-        void transferBalance_ZeroAmount_ReturnsFalse() {
+        @DisplayName("Should prevent overflow in recipient's balance")
+        void transferBalance_RecipientOverflow_ReturnsFalse() {
+            // Given
+            long nearMaxBalance = Long.MAX_VALUE - 100L;
+            when(economyValidator.isGreaterThanZero(TRANSFER_AMOUNT)).thenReturn(true);
+            when(balanceManager.getBalance(fromPlayer)).thenReturn(INITIAL_BALANCE);
+            when(balanceManager.getBalance(toPlayer)).thenReturn(nearMaxBalance);
+            when(economyValidator.hasSufficientFunds(INITIAL_BALANCE, TRANSFER_AMOUNT)).thenReturn(true);
+
             // When
-            boolean result = economyManager.transferBalance(fromPlayer, toPlayer, 0L);
+            boolean result = economyManager.transferBalance(fromPlayer, toPlayer, TRANSFER_AMOUNT);
 
             // Then
-            assertFalse(result, "Transfer should fail with zero amount");
-            verify(balanceManager, never()).getBalance(any(UUID.class));
-            verify(balanceManager, never()).setBalance(any(UUID.class), anyLong());
-        }
-
-        @ParameterizedTest
-        @ValueSource(longs = {-1L, -100L, -1000L, Long.MIN_VALUE})
-        @DisplayName("Should reject negative transfer amounts")
-        void transferBalance_NegativeAmount_ReturnsFalse(long negativeAmount) {
-            // When
-            boolean result = economyManager.transferBalance(fromPlayer, toPlayer, negativeAmount);
-
-            // Then
-            assertFalse(result, "Transfer should fail with negative amount: " + negativeAmount);
-            verify(balanceManager, never()).getBalance(any(UUID.class));
+            assertFalse(result, "Transfer should fail to prevent recipient overflow");
             verify(balanceManager, never()).setBalance(any(UUID.class), anyLong());
         }
 
         @Test
-        @DisplayName("Should handle null UUIDs gracefully")
-        void transferBalance_NullUUIDs_HandledGracefully() {
-            // When & Then - Should not crash with null UUIDs
-            assertAll(
-                    () -> assertDoesNotThrow(() -> economyManager.transferBalance(null, toPlayer, TRANSFER_AMOUNT)),
-                    () -> assertDoesNotThrow(() -> economyManager.transferBalance(fromPlayer, null, TRANSFER_AMOUNT)),
-                    () -> assertDoesNotThrow(() -> economyManager.transferBalance(null, null, TRANSFER_AMOUNT))
+        @DisplayName("Should handle null UUIDs")
+        void transferBalance_NullUUIDs_ReturnsFalse() {
+            assertAll("Should handle null UUIDs gracefully",
+                    () -> assertFalse(economyManager.transferBalance(null, toPlayer, TRANSFER_AMOUNT),
+                            "Should fail with null from UUID"),
+                    () -> assertFalse(economyManager.transferBalance(fromPlayer, null, TRANSFER_AMOUNT),
+                            "Should fail with null to UUID"),
+                    () -> assertFalse(economyManager.transferBalance(null, null, TRANSFER_AMOUNT),
+                            "Should fail with both UUIDs null")
             );
+
+            verifyNoInteractions(economyValidator);
+            verifyNoInteractions(balanceManager);
         }
 
         @Test
         @DisplayName("Should handle exact balance transfer")
         void transferBalance_ExactBalance_Success() {
             // Given
+            when(economyValidator.isGreaterThanZero(TRANSFER_AMOUNT)).thenReturn(true);
             when(balanceManager.getBalance(fromPlayer)).thenReturn(TRANSFER_AMOUNT);
             when(balanceManager.getBalance(toPlayer)).thenReturn(0L);
+            when(economyValidator.hasSufficientFunds(TRANSFER_AMOUNT, TRANSFER_AMOUNT)).thenReturn(true);
 
             // When
             boolean result = economyManager.transferBalance(fromPlayer, toPlayer, TRANSFER_AMOUNT);
@@ -325,25 +435,57 @@ class EconomyManagerTest {
         @Test
         @DisplayName("Should handle multiple operations in sequence")
         void multipleOperations_InSequence_WorkCorrectly() {
-            // Given - Only 2 getBalance calls for the operations
-            when(balanceManager.getBalance(testPlayer))
-                    .thenReturn(100L)
-                    .thenReturn(150L);
+            // Given - Setup mocks for deposit operation
+            when(economyValidator.isGreaterThanZero(50L)).thenReturn(true);
+            when(balanceManager.getBalance(testPlayer)).thenReturn(100L, 150L);
+
+            // Given - Setup mocks for withdraw operation
+            when(economyValidator.hasSufficientFunds(150L, 50L)).thenReturn(true);
 
             // When
-            assertTrue(economyManager.deposit(testPlayer, 50L), "First deposit should succeed");
-            assertTrue(economyManager.withdraw(testPlayer, 50L), "Withdrawal should succeed");
+            boolean depositResult = economyManager.deposit(testPlayer, 50L);
+            boolean withdrawResult = economyManager.withdraw(testPlayer, 50L);
 
-            // Verify call order - now only 2 getBalance calls total!
-            InOrder inOrder = inOrder(balanceManager);
+            // Then
+            assertTrue(depositResult, "First deposit should succeed");
+            assertTrue(withdrawResult, "Withdrawal should succeed");
 
-            // Deposit: 1 getBalance, then setBalance
+            // Verify interactions in order
+            InOrder inOrder = inOrder(economyValidator, balanceManager);
+
+            // Deposit sequence
+            inOrder.verify(economyValidator).isGreaterThanZero(50L);
             inOrder.verify(balanceManager).getBalance(testPlayer);
             inOrder.verify(balanceManager).setBalance(testPlayer, 150L);
 
-            // Withdrawal: 1 getBalance, then setBalance
+            // Withdraw sequence
+            inOrder.verify(economyValidator).isGreaterThanZero(50L);
             inOrder.verify(balanceManager).getBalance(testPlayer);
+            inOrder.verify(economyValidator).hasSufficientFunds(150L, 50L);
             inOrder.verify(balanceManager).setBalance(testPlayer, 100L);
+        }
+
+        @Test
+        @DisplayName("Should maintain validator integration throughout operations")
+        void operations_ValidatorIntegration_WorksCorrectly() {
+            // Test that all operations properly integrate with the validator
+            UUID player1 = UUID.randomUUID();
+            UUID player2 = UUID.randomUUID();
+
+            // Test deposit with validator
+            when(economyValidator.isGreaterThanZero(100L)).thenReturn(false);
+            assertFalse(economyManager.deposit(player1, 100L));
+            verify(economyValidator).isGreaterThanZero(100L);
+
+            // Test withdraw with validator
+            when(economyValidator.isGreaterThanZero(50L)).thenReturn(false);
+            assertFalse(economyManager.withdraw(player1, 50L));
+            verify(economyValidator).isGreaterThanZero(50L);
+
+            // Test transfer with validator
+            when(economyValidator.isGreaterThanZero(25L)).thenReturn(false);
+            assertFalse(economyManager.transferBalance(player1, player2, 25L));
+            verify(economyValidator).isGreaterThanZero(25L);
         }
     }
 }
