@@ -26,9 +26,12 @@ class CurrencyParserTest {
 
     private AutoCloseable mocks;
 
+    private CurrencyParser currencyParser;
+
     @BeforeEach
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
+        this.currencyParser = new CurrencyParser();
     }
 
     @AfterEach
@@ -47,7 +50,7 @@ class CurrencyParserTest {
             String input = "1.2345";
 
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, input);
+            Optional<Long> result = currencyParser.parseAmount(player, input);
 
             // Then
             assertTrue(result.isPresent(), "Should parse valid decimal");
@@ -62,7 +65,7 @@ class CurrencyParserTest {
             String input = "123";
 
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, input);
+            Optional<Long> result = currencyParser.parseAmount(player, input);
 
             // Then
             assertTrue(result.isPresent(), "Should parse valid integer");
@@ -75,7 +78,7 @@ class CurrencyParserTest {
         @DisplayName("Should parse various valid amounts correctly")
         void parseAmount_ValidAmounts_ReturnsCorrectValues(String input, long expected) {
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, input);
+            Optional<Long> result = currencyParser.parseAmount(player, input);
 
             // Then
             assertTrue(result.isPresent(), "Should parse valid amount: " + input);
@@ -102,17 +105,17 @@ class CurrencyParserTest {
         void parseAmount_WithCurrencySymbols_ParsesCorrectly() {
             assertAll("Should parse amounts with various currency symbols",
                     () -> {
-                        Optional<Long> result = CurrencyParser.parseAmount(player, "$1.23");
+                        Optional<Long> result = currencyParser.parseAmount(player, "$1.23");
                         assertTrue(result.isPresent());
                         assertEquals(12300L, result.get());
                     },
                     () -> {
-                        Optional<Long> result = CurrencyParser.parseAmount(player, "€5.67");
+                        Optional<Long> result = currencyParser.parseAmount(player, "€5.67");
                         assertTrue(result.isPresent());
                         assertEquals(56700L, result.get());
                     },
                     () -> {
-                        Optional<Long> result = CurrencyParser.parseAmount(player, "£10.99");
+                        Optional<Long> result = currencyParser.parseAmount(player, "£10.99");
                         assertTrue(result.isPresent());
                         assertEquals(109900L, result.get());
                     }
@@ -124,9 +127,9 @@ class CurrencyParserTest {
         @DisplayName("Should handle whitespace correctly")
         void parseAmount_WithWhitespace_ParsesCorrectly() {
             assertAll("Should handle various whitespace scenarios",
-                    () -> assertTrue(CurrencyParser.parseAmount(player, "  1.23  ").isPresent()),
-                    () -> assertTrue(CurrencyParser.parseAmount(player, "\t5.67\n").isPresent()),
-                    () -> assertTrue(CurrencyParser.parseAmount(player, " $10.99 ").isPresent())
+                    () -> assertTrue(currencyParser.parseAmount(player, "  1.23  ").isPresent()),
+                    () -> assertTrue(currencyParser.parseAmount(player, "\t5.67\n").isPresent()),
+                    () -> assertTrue(currencyParser.parseAmount(player, " $10.99 ").isPresent())
             );
             verifyNoInteractions(player);
         }
@@ -138,7 +141,7 @@ class CurrencyParserTest {
             String input = "-1.23";
 
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, input);
+            Optional<Long> result = currencyParser.parseAmount(player, input);
 
             // Then
             assertFalse(result.isPresent(), "Should reject negative amount");
@@ -160,7 +163,7 @@ class CurrencyParserTest {
             String input = "0";
 
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, input);
+            Optional<Long> result = currencyParser.parseAmount(player, input);
 
             // Then
             assertFalse(result.isPresent(), "Should reject zero amount");
@@ -172,15 +175,15 @@ class CurrencyParserTest {
         void parseAmount_EmptyInput_RejectsAndSendsMessage() {
             assertAll("Should reject various empty inputs",
                     () -> {
-                        Optional<Long> result = CurrencyParser.parseAmount(player, "");
+                        Optional<Long> result = currencyParser.parseAmount(player, "");
                         assertFalse(result.isPresent());
                     },
                     () -> {
-                        Optional<Long> result = CurrencyParser.parseAmount(player, "   ");
+                        Optional<Long> result = currencyParser.parseAmount(player, "   ");
                         assertFalse(result.isPresent());
                     },
                     () -> {
-                        Optional<Long> result = CurrencyParser.parseAmount(player, "\t\n");
+                        Optional<Long> result = currencyParser.parseAmount(player, "\t\n");
                         assertFalse(result.isPresent());
                     }
             );
@@ -196,7 +199,7 @@ class CurrencyParserTest {
             String input = "1.12345"; // 5 decimal places, max is 4
 
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, input);
+            Optional<Long> result = currencyParser.parseAmount(player, input);
 
             // Then
             assertFalse(result.isPresent(), "Should reject amount with > 4 decimal places");
@@ -208,15 +211,15 @@ class CurrencyParserTest {
         void parseAmount_InvalidFormat_RejectsAndSendsMessage() {
             assertAll("Should reject various invalid formats",
                     () -> {
-                        Optional<Long> result = CurrencyParser.parseAmount(player, "abc");
+                        Optional<Long> result = currencyParser.parseAmount(player, "abc");
                         assertFalse(result.isPresent());
                     },
                     () -> {
-                        Optional<Long> result = CurrencyParser.parseAmount(player, "1.2.3");
+                        Optional<Long> result = currencyParser.parseAmount(player, "1.2.3");
                         assertFalse(result.isPresent());
                     },
                     () -> {
-                        Optional<Long> result = CurrencyParser.parseAmount(player, "1a.23");
+                        Optional<Long> result = currencyParser.parseAmount(player, "1a.23");
                         assertFalse(result.isPresent());
                     }
             );
@@ -231,7 +234,7 @@ class CurrencyParserTest {
             String input = "999999999999999999999"; // Very large number
 
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, input);
+            Optional<Long> result = currencyParser.parseAmount(player, input);
 
             // Then
             assertFalse(result.isPresent(), "Should reject amounts that are too large");
@@ -244,7 +247,7 @@ class CurrencyParserTest {
             // When & Then
             IllegalArgumentException exception = assertThrows(
                     IllegalArgumentException.class,
-                    () -> CurrencyParser.parseAmount(null, "1.23")
+                    () -> currencyParser.parseAmount(null, "1.23")
             );
             assertEquals("Player cannot be null", exception.getMessage());
         }
@@ -255,7 +258,7 @@ class CurrencyParserTest {
             // When & Then
             IllegalArgumentException exception = assertThrows(
                     IllegalArgumentException.class,
-                    () -> CurrencyParser.parseAmount(player, null)
+                    () -> currencyParser.parseAmount(player, null)
             );
             assertEquals("Input cannot be null", exception.getMessage());
         }
@@ -269,7 +272,7 @@ class CurrencyParserTest {
         @DisplayName("Should send messages when flag is true")
         void parseAmountWithFlag_SendMessagesTrue_SendsMessages() {
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, "-1.23", true);
+            Optional<Long> result = currencyParser.parseAmount(player, "-1.23", true);
 
             // Then
             assertFalse(result.isPresent());
@@ -280,7 +283,7 @@ class CurrencyParserTest {
         @DisplayName("Should not send messages when flag is false")
         void parseAmountWithFlag_SendMessagesFalse_NoMessages() {
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, "-1.23", false);
+            Optional<Long> result = currencyParser.parseAmount(player, "-1.23", false);
 
             // Then
             assertFalse(result.isPresent());
@@ -296,7 +299,7 @@ class CurrencyParserTest {
         @DisplayName("Should parse valid amounts without sending messages")
         void parseAmountSilently_ValidAmount_ParsesWithoutMessages() {
             // When
-            Optional<Long> result = CurrencyParser.parseAmountSilently("1.23");
+            Optional<Long> result = currencyParser.parseAmountSilently("1.23");
 
             // Then
             assertTrue(result.isPresent());
@@ -307,7 +310,7 @@ class CurrencyParserTest {
         @DisplayName("Should reject invalid amounts without sending messages")
         void parseAmountSilently_InvalidAmount_RejectsWithoutMessages() {
             // When
-            Optional<Long> result = CurrencyParser.parseAmountSilently("-1.23");
+            Optional<Long> result = currencyParser.parseAmountSilently("-1.23");
 
             // Then
             assertFalse(result.isPresent());
@@ -320,7 +323,7 @@ class CurrencyParserTest {
             // When & Then
             IllegalArgumentException exception = assertThrows(
                     IllegalArgumentException.class,
-                    () -> CurrencyParser.parseAmountSilently(null)
+                    () -> currencyParser.parseAmountSilently(null)
             );
             assertEquals("Input cannot be null", exception.getMessage());
         }
@@ -330,7 +333,7 @@ class CurrencyParserTest {
         @DisplayName("Should reject various invalid inputs silently")
         void parseAmountSilently_InvalidInputs_RejectsSilently(String input) {
             // When
-            Optional<Long> result = CurrencyParser.parseAmountSilently(input);
+            Optional<Long> result = currencyParser.parseAmountSilently(input);
 
             // Then
             assertFalse(result.isPresent(), "Should reject invalid input: " + input);
@@ -346,7 +349,7 @@ class CurrencyParserTest {
         @DisplayName("Should return true for valid amounts")
         void isValidAmount_ValidInputs_ReturnsTrue(String input) {
             // When & Then
-            assertTrue(CurrencyParser.isValidAmount(input), "Should be valid: " + input);
+            assertTrue(currencyParser.isValidAmount(input), "Should be valid: " + input);
         }
 
         @ParameterizedTest
@@ -354,7 +357,7 @@ class CurrencyParserTest {
         @DisplayName("Should return false for invalid amounts")
         void isValidAmount_InvalidInputs_ReturnsFalse(String input) {
             // When & Then
-            assertFalse(CurrencyParser.isValidAmount(input), "Should be invalid: " + input);
+            assertFalse(currencyParser.isValidAmount(input), "Should be invalid: " + input);
         }
     }
 
@@ -366,7 +369,7 @@ class CurrencyParserTest {
         @DisplayName("Should return maximum allowed value")
         void getMaxAllowedValue_ReturnsCorrectValue() {
             // When
-            BigDecimal maxValue = CurrencyParser.getMaxAllowedValue();
+            BigDecimal maxValue = currencyParser.getMaxAllowedValue();
 
             // Then
             assertNotNull(maxValue, "Max allowed value should not be null");
@@ -390,7 +393,7 @@ class CurrencyParserTest {
             String input = "1E-4"; // 0.0001
 
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, input);
+            Optional<Long> result = currencyParser.parseAmount(player, input);
 
             // Then
             assertTrue(result.isPresent(), "Should parse scientific notation");
@@ -401,7 +404,7 @@ class CurrencyParserTest {
         @DisplayName("Should handle currency symbols only")
         void parseAmount_CurrencySymbolOnly_Rejects() {
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, "$");
+            Optional<Long> result = currencyParser.parseAmount(player, "$");
 
             // Then
             assertFalse(result.isPresent(), "Should reject currency symbol without number");
@@ -415,7 +418,7 @@ class CurrencyParserTest {
             String input = "1.0000"; // Exactly 4 decimal places
 
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, input);
+            Optional<Long> result = currencyParser.parseAmount(player, input);
 
             // Then
             assertTrue(result.isPresent(), "Should parse exactly 4 decimal places");
@@ -430,7 +433,7 @@ class CurrencyParserTest {
             String input = "0.0001"; // Smallest possible amount
 
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, input);
+            Optional<Long> result = currencyParser.parseAmount(player, input);
 
             // Then
             assertTrue(result.isPresent(), "Should parse smallest valid amount");
@@ -442,11 +445,11 @@ class CurrencyParserTest {
         @DisplayName("Should handle boundary values correctly")
         void parseAmount_BoundaryValues_HandlesCorrectly() {
             // Test values at the boundary of what should be accepted
-            BigDecimal maxAllowed = CurrencyParser.getMaxAllowedValue();
+            BigDecimal maxAllowed = currencyParser.getMaxAllowedValue();
             String maxInput = maxAllowed.toPlainString();
 
             // When
-            Optional<Long> result = CurrencyParser.parseAmount(player, maxInput);
+            Optional<Long> result = currencyParser.parseAmount(player, maxInput);
 
             // Then
             assertTrue(result.isPresent(), "Should parse maximum allowed value");

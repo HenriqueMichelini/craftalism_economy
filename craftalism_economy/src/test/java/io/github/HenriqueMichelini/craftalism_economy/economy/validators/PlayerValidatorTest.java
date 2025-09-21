@@ -29,17 +29,20 @@ class PlayerValidatorTest {
     private PlayerValidator playerValidator;
     private PlayerMock requester;
 
+    private AutoCloseable mocks;
+
     @BeforeEach
     void setUp() {
         server = MockBukkit.mock();
-        MockitoAnnotations.openMocks(this);
+        mocks = MockitoAnnotations.openMocks(this);
         playerValidator = new PlayerValidator();
         requester = server.addPlayer(TEST_REQUESTER_NAME);
     }
 
     @AfterEach
-    void tearDown() {
+    void tearDown() throws Exception {
         MockBukkit.unmock();
+        mocks.close();
     }
 
     @Nested

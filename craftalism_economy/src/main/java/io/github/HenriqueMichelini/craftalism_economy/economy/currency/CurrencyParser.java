@@ -16,7 +16,6 @@ import java.util.Optional;
  */
 public class CurrencyParser {
     private static final NamedTextColor ERROR_COLOR = NamedTextColor.RED;
-    private static final NamedTextColor SUCCESS_COLOR = NamedTextColor.GREEN;
 
     // Maximum allowed value to prevent overflow when scaling
     private static final BigDecimal MAX_ALLOWED_VALUE = new BigDecimal(Long.MAX_VALUE)
@@ -30,7 +29,7 @@ public class CurrencyParser {
      * @return Optional containing the parsed amount, or empty if parsing failed
      * @throws IllegalArgumentException if player or input is null
      */
-    public static Optional<Long> parseAmount(Player player, String input) {
+    public Optional<Long> parseAmount(Player player, String input) {
         if (player == null) {
             throw new IllegalArgumentException("Player cannot be null");
         }
@@ -104,7 +103,7 @@ public class CurrencyParser {
      * @return Optional containing the parsed amount, or empty if parsing failed
      * @throws IllegalArgumentException if player or input is null
      */
-    public static Optional<Long> parseAmount(Player player, String input, boolean sendMessages) {
+    public Optional<Long> parseAmount(Player player, String input, boolean sendMessages) {
         if (!sendMessages) {
             return parseAmountSilently(input);
         }
@@ -118,7 +117,7 @@ public class CurrencyParser {
      * @return Optional containing the parsed amount, or empty if parsing failed
      * @throws IllegalArgumentException if input is null
      */
-    public static Optional<Long> parseAmountSilently(String input) {
+    public Optional<Long> parseAmountSilently(String input) {
         if (input == null) {
             throw new IllegalArgumentException("Input cannot be null");
         }
@@ -170,7 +169,7 @@ public class CurrencyParser {
      * @param input the input string to validate
      * @return true if the input is a valid currency amount, false otherwise
      */
-    public static boolean isValidAmount(String input) {
+    public boolean isValidAmount(String input) {
         return parseAmountSilently(input).isPresent();
     }
 
@@ -179,7 +178,7 @@ public class CurrencyParser {
      *
      * @return the maximum allowed BigDecimal value
      */
-    public static BigDecimal getMaxAllowedValue() {
+    public BigDecimal getMaxAllowedValue() {
         return MAX_ALLOWED_VALUE;
     }
 
@@ -189,7 +188,7 @@ public class CurrencyParser {
      * @param input the input string
      * @return the cleaned string with currency symbols removed
      */
-    private static String removeCurrencySymbols(String input) {
+    private String removeCurrencySymbols(String input) {
         // Remove common currency symbols and whitespace
         return input.replaceAll("[$€£¥₹₽₩¢]", "").trim();
     }
@@ -200,17 +199,8 @@ public class CurrencyParser {
      * @param player the player to send the message to
      * @param message the error message
      */
-    private static void sendErrorMessage(Player player, String message) {
+    private void sendErrorMessage(Player player, String message) {
         player.sendMessage(Component.text(message).color(ERROR_COLOR));
     }
 
-    /**
-     * Sends a success message to the player.
-     *
-     * @param player the player to send the message to
-     * @param message the success message
-     */
-    private static void sendSuccessMessage(Player player, String message) {
-        player.sendMessage(Component.text(message).color(SUCCESS_COLOR));
-    }
 }

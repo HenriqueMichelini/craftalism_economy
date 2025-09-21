@@ -1,6 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy;
 
 import io.github.HenriqueMichelini.craftalism_economy.economy.currency.CurrencyFormatter;
+import io.github.HenriqueMichelini.craftalism_economy.economy.currency.CurrencyParser;
 import io.github.HenriqueMichelini.craftalism_economy.economy.managers.EconomyManager;
 import io.github.HenriqueMichelini.craftalism_economy.economy.command.BalanceCommand;
 import io.github.HenriqueMichelini.craftalism_economy.economy.command.BaltopCommand;
@@ -23,6 +24,11 @@ import java.util.logging.Level;
 public final class CraftalismEconomy extends JavaPlugin {
     private EconomyManager economyManager;
     private CurrencyFormatter currencyFormatter;
+    private CurrencyParser currencyParser;
+
+    private PlayerValidator playerValidator;
+    private EconomyValidator economyValidator;
+    private CommandValidator commandValidator;
 
     private long defaultBalance;
     private final File balancesFile = new File(this.getDataFolder(), "balances.yml");
@@ -36,6 +42,10 @@ public final class CraftalismEconomy extends JavaPlugin {
 
         this.defaultBalance = parseDefaultBalance();
         this.balanceManager = new BalanceManager(balancesFile, balancesConfig, this);
+        this.economyValidator = new EconomyValidator();
+        this.playerValidator = new PlayerValidator();
+        this.commandValidator = new CommandValidator();
+        this.currencyParser = new CurrencyParser();
 
         initializeMoneyFormat();
         initializeEconomyManager();
@@ -77,15 +87,15 @@ public final class CraftalismEconomy extends JavaPlugin {
     }
 
     private void initializeEconomyManager() {
-        this.economyManager = new EconomyManager(balanceManager);
+        this.economyManager = new EconomyManager(balanceManager, economyValidator);
         getLogger().fine("Economy manager initialized");
     }
 
     private void registerCommands() {
-        registerCommand("pay", new PayCommand(economyManager, balanceManager, this, currencyFormatter));
+        registerCommand("pay", new PayCommand(economyManager, balanceManager, this, currencyFormatter, currencyParser));
         registerCommand("balance", new BalanceCommand(balanceManager, this, currencyFormatter));
         registerCommand("baltop", new BaltopCommand(balanceManager, this, currencyFormatter));
-        registerCommand("setbalance", new SetBalanceCommand(balanceManager, this, currencyFormatter));
+        registerCommand("setbalance", new SetBalanceCommand(balanceManager, this, currencyFormatter, playerValidator, currencyParser));
     }
 
     private void registerCommand(String name, CommandExecutor executor) {
@@ -119,11 +129,11 @@ public final class CraftalismEconomy extends JavaPlugin {
         return balancesFile;
     }
 
-    public PlayerValidator getPlayerValidator() { return new PlayerValidator(); }
+    public PlayerValidator getPlayerValidator() { return playerValidator; }
 
-    public CommandValidator getCommandValidator() { return new CommandValidator(); }
+    public CommandValidator getCommandValidator() { return commandValidator; }
 
-    public EconomyValidator getEconomyValidator() { return new EconomyValidator(); }
+    public EconomyValidator getEconomyValidator() { return economyValidator; }
 
     public long getDefaultBalance() {
         return defaultBalance;
@@ -132,6 +142,8 @@ public final class CraftalismEconomy extends JavaPlugin {
     public CurrencyFormatter getCurrencyFormatter() {
         return currencyFormatter;
     }
+
+    public CurrencyParser getCurrencyParser() { return currencyParser; }
 
     public EconomyManager getEconomyManager() {
         return economyManager;

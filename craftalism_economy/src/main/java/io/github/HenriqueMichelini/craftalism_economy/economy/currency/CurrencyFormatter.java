@@ -25,8 +25,6 @@ public class CurrencyFormatter {
     /** BigDecimal representation of the scale factor for precise calculations */
     public static final BigDecimal DECIMAL_SCALE_BD = BigDecimal.valueOf(DECIMAL_SCALE);
 
-    private static final NamedTextColor ERROR_COLOR = NamedTextColor.RED;
-
     /**
      * Creates a new CurrencyFormatter with the specified configuration.
      *
