@@ -35,7 +35,6 @@ import java.util.stream.IntStream;
 public class BaltopCommand implements CommandExecutor {
 
     // Configuration constants
-    private static final int DEFAULT_TOP_LIMIT = 10;
     private static final int ENTRIES_PER_PAGE = 10;
     private static final String LOG_PREFIX = "[CE.Baltop]";
     private static final String UNKNOWN_PLAYER_NAME = "Unknown Player";
@@ -51,7 +50,6 @@ public class BaltopCommand implements CommandExecutor {
     private static final TextColor PAGE_INFO_COLOR = TextColor.color(0xFFAA00); // Orange
 
     private final BalanceManager balanceManager;
-    private final JavaPlugin plugin;
     private final CurrencyFormatter currencyFormatter;
     private final Logger logger;
     private final PlayerValidator playerValidator;
@@ -69,7 +67,7 @@ public class BaltopCommand implements CommandExecutor {
                          @NotNull JavaPlugin plugin,
                          @NotNull CurrencyFormatter currencyFormatter) {
         this.balanceManager = Objects.requireNonNull(balanceManager, "BalanceManager cannot be null");
-        this.plugin = Objects.requireNonNull(plugin, "Plugin cannot be null");
+        Objects.requireNonNull(plugin, "Plugin cannot be null");
         this.currencyFormatter = Objects.requireNonNull(currencyFormatter, "CurrencyFormatter cannot be null");
         this.logger = plugin.getLogger();
         this.playerValidator = new PlayerValidator();
@@ -288,23 +286,6 @@ public class BaltopCommand implements CommandExecutor {
      */
     private Component errorComponent() {
         return Component.text("An error occurred while retrieving balance rankings.").color(ERROR_COLOR);
-    }
-
-    /**
-     * Resolves a player's display name from their UUID.
-     *
-     * @param uuid the player's UUID
-     * @return the player's name or a default name if unavailable
-     */
-    private String resolvePlayerName(@NotNull UUID uuid) {
-        try {
-            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
-            String name = offlinePlayer.getName();
-            return (name != null && !name.trim().isEmpty()) ? name : UNKNOWN_PLAYER_NAME;
-        } catch (Exception e) {
-            logger.warning(LOG_PREFIX + " Failed to resolve player name for UUID " + uuid + ": " + e.getMessage());
-            return UNKNOWN_PLAYER_NAME;
-        }
     }
 
     /**
