@@ -249,8 +249,8 @@ class BaltopCommandTest {
                     baltopCommand.onCommand(senderPlayer, command, "baltop", new String[0]);
 
                     // Then
-                    // Verify exactly 11 messages sent (header + 10 entries)
-                    verify(senderPlayer, times(11)).sendMessage(any(Component.class));
+                    // Verify exactly 11 messages sent (header + 10 entries + footer + next page = 13)
+                    verify(senderPlayer, times(13)).sendMessage(any(Component.class));
                 }
             }
         }
@@ -362,9 +362,11 @@ class BaltopCommandTest {
 
                     // Then
                     assertTrue(result);
-                    verify(logger).warning(contains("[CE.Baltop] Error executing baltop command"));
-                    verify(senderPlayer, times(2)).sendMessage(any(Component.class)); // Error message
-                    // Don't verify logger.info - it won't be called when exception occurs
+                    verify(logger, atLeastOnce()).warning(contains("[CE.Baltop] Error formatting currency for balance"));
+                    verify(senderPlayer, atLeast(1)).sendMessage(any(Component.class));
+                    verify(senderPlayer).sendMessage(
+                            ArgumentMatchers.<net.kyori.adventure.text.Component>argThat(comp -> comp.toString().contains("Top"))
+                    );
                 }
             }
         }

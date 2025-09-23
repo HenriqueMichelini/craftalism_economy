@@ -2,6 +2,8 @@ package io.github.HenriqueMichelini.craftalism_economy.economy.command;
 
 import io.github.HenriqueMichelini.craftalism_economy.economy.currency.CurrencyFormatter;
 import io.github.HenriqueMichelini.craftalism_economy.economy.managers.BalanceManager;
+import io.github.HenriqueMichelini.craftalism_economy.economy.validators.CommandValidator;
+import io.github.HenriqueMichelini.craftalism_economy.economy.validators.PlayerValidator;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -34,21 +36,26 @@ public class BaltopCommand implements CommandExecutor {
 
     // Configuration constants
     private static final int DEFAULT_TOP_LIMIT = 10;
+    private static final int ENTRIES_PER_PAGE = 10;
     private static final String LOG_PREFIX = "[CE.Baltop]";
     private static final String UNKNOWN_PLAYER_NAME = "Unknown Player";
 
     // Color scheme constants
     private static final NamedTextColor HEADER_COLOR = NamedTextColor.GOLD;
     private static final NamedTextColor ERROR_COLOR = NamedTextColor.RED;
+    private static final NamedTextColor INFO_COLOR = NamedTextColor.YELLOW;
     private static final TextColor RANK_COLOR = TextColor.color(0xFFFF55); // Bright yellow
     private static final TextColor NAME_COLOR = TextColor.color(0x55FF55); // Bright green
     private static final TextColor SEPARATOR_COLOR = TextColor.color(0xFFFFFF); // White
     private static final TextColor BALANCE_COLOR = TextColor.color(0x55FFFF); // Bright cyan
+    private static final TextColor PAGE_INFO_COLOR = TextColor.color(0xFFAA00); // Orange
 
     private final BalanceManager balanceManager;
     private final JavaPlugin plugin;
     private final CurrencyFormatter currencyFormatter;
     private final Logger logger;
+    private final PlayerValidator playerValidator;
+    private final CommandValidator commandValidator;
 
     /**
      * Creates a new BaltopCommand instance.
@@ -65,48 +72,72 @@ public class BaltopCommand implements CommandExecutor {
         this.plugin = Objects.requireNonNull(plugin, "Plugin cannot be null");
         this.currencyFormatter = Objects.requireNonNull(currencyFormatter, "CurrencyFormatter cannot be null");
         this.logger = plugin.getLogger();
+        this.playerValidator = new PlayerValidator();
+        this.commandValidator = new CommandValidator();
     }
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, String @NotNull [] args) {
         try {
-            if (!isPlayerSender(sender)) return true;
-
-            Player player = (Player) sender;
-
-            List<BalanceEntry> topBalances = getTopBalances();
-            if (topBalances.isEmpty()) {
-                sendNoDataMessage(player);
-                logCommandUsage(player);
+            // Validate sender is a player
+            if (!playerValidator.isSenderAPlayer(sender)) {
                 return true;
             }
 
-            sendBaltopDisplay(player, topBalances);
-            logCommandUsage(player);
+            Player player = (Player) sender;
+
+            // Validate arguments
+            if (args.length > 1) {
+                commandValidator.validateArguments(player, args, 1, "Usage: /baltop [page]");
+                return true;
+            }
+
+            int page = 1;
+            if (args.length == 1) {
+                try {
+                    page = Integer.parseInt(args[0]);
+                    if (page < 1) {
+                        player.sendMessage(Component.text("Page number must be at least 1.").color(ERROR_COLOR));
+                        return true;
+                    }
+                } catch (NumberFormatException e) {
+                    player.sendMessage(Component.text("Invalid page number. Please enter a valid number.").color(ERROR_COLOR));
+                    return true;
+                }
+            }
+
+            // Get and validate balance data
+            List<BalanceEntry> allBalances = getTopBalances();
+            if (allBalances.isEmpty()) {
+                sendNoDataMessage(player);
+                logCommandUsage(player, page);
+                return true;
+            }
+
+            // Calculate pagination
+            int totalPages = (int) Math.ceil((double) allBalances.size() / ENTRIES_PER_PAGE);
+            if (page > totalPages) {
+                player.sendMessage(Component.text("Page " + page + " does not exist. There are only " + totalPages + " pages.").color(ERROR_COLOR));
+                return true;
+            }
+
+            // Get entries for current page
+            int startIndex = (page - 1) * ENTRIES_PER_PAGE;
+            int endIndex = Math.min(startIndex + ENTRIES_PER_PAGE, allBalances.size());
+            List<BalanceEntry> pageBalances = allBalances.subList(startIndex, endIndex);
+
+            // Send formatted baltop display
+            sendBaltopDisplay(player, pageBalances, page, totalPages);
+            logCommandUsage(player, page);
 
             return true;
 
         } catch (Exception e) {
             logger.warning(LOG_PREFIX + " Error executing baltop command: " + e.getMessage());
-            sender.sendMessage(errorComponent("An error occurred while retrieving balance rankings."));
+            sender.sendMessage(errorComponent());
             return true;
         }
-    }
-
-    /**
-     * Validates that the sender is a player.
-     *
-     * @param sender the command sender
-     * @return true if sender is a player, false otherwise
-     */
-    private boolean isPlayerSender(@NotNull CommandSender sender) {
-        if (sender instanceof Player) {
-            return true;
-        }
-
-        sender.sendMessage(errorComponent("This command is only available to players."));
-        return false;
     }
 
     /**
@@ -120,7 +151,6 @@ public class BaltopCommand implements CommandExecutor {
                 .stream()
                 .filter(entry -> entry.getValue() > 0) // Only show players with positive balances
                 .sorted(Map.Entry.<UUID, Long>comparingByValue().reversed())
-                .limit(DEFAULT_TOP_LIMIT)
                 .map(entry -> new BalanceEntry(entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
     }
@@ -129,23 +159,34 @@ public class BaltopCommand implements CommandExecutor {
      * Sends the complete baltop display to the player.
      *
      * @param player the player to send the display to
-     * @param balances the sorted list of balance entries
+     * @param balances the sorted list of balance entries for the current page
+     * @param currentPage the current page number
+     * @param totalPages the total number of pages
      */
-    private void sendBaltopDisplay(@NotNull Player player, @NotNull List<BalanceEntry> balances) {
-        sendHeader(player, balances.size());
-        sendBalanceEntries(player, balances);
+    private void sendBaltopDisplay(@NotNull Player player, @NotNull List<BalanceEntry> balances,
+                                   int currentPage, int totalPages) {
+        sendHeader(player, balances.size(), currentPage, totalPages);
+        sendBalanceEntries(player, balances, (currentPage - 1) * ENTRIES_PER_PAGE);
+        sendFooter(player, currentPage, totalPages);
     }
 
     /**
      * Sends the header message for the baltop display.
      *
      * @param player the player to send to
-     * @param entryCount the number of entries being displayed
+     * @param entryCount the number of entries being displayed on this page
+     * @param currentPage the current page number
+     * @param totalPages the total number of pages
      */
-    private void sendHeader(@NotNull Player player, int entryCount) {
-        TextComponent header = Component.text("Top " + entryCount + " Richest Players:")
-                .color(HEADER_COLOR)
-                .decorate(TextDecoration.BOLD);
+    private void sendHeader(@NotNull Player player, int entryCount, int currentPage, int totalPages) {
+        TextComponent header = Component.text()
+                .append(Component.text("Top " + entryCount + " Richest Players")
+                        .color(HEADER_COLOR)
+                        .decorate(TextDecoration.BOLD))
+                .append(Component.text(" (Page " + currentPage + "/" + totalPages + ")")
+                        .color(PAGE_INFO_COLOR))
+                .append(Component.text(":"))
+                .build();
 
         player.sendMessage(header);
     }
@@ -154,16 +195,45 @@ public class BaltopCommand implements CommandExecutor {
      * Sends all balance entries to the player.
      *
      * @param player the player to send to
-     * @param balances the list of balance entries
+     * @param balances the list of balance entries for the current page
+     * @param startRank the starting rank for this page (1-based)
      */
-    private void sendBalanceEntries(@NotNull Player player, @NotNull List<BalanceEntry> balances) {
+    private void sendBalanceEntries(@NotNull Player player, @NotNull List<BalanceEntry> balances, int startRank) {
         IntStream.range(0, balances.size())
                 .forEach(i -> {
-                    int rank = i + 1;
+                    int rank = startRank + i + 1; // Calculate global rank
                     BalanceEntry entry = balances.get(i);
                     Component message = buildBalanceEntryComponent(rank, entry);
                     player.sendMessage(message);
                 });
+    }
+
+    /**
+     * Sends the footer with pagination info.
+     *
+     * @param player the player to send to
+     * @param currentPage the current page number
+     * @param totalPages the total number of pages
+     */
+    private void sendFooter(@NotNull Player player, int currentPage, int totalPages) {
+        if (totalPages > 1) {
+            TextComponent footer = Component.text()
+                    .append(Component.text("Use "))
+                    .append(Component.text("/baltop <page>").color(INFO_COLOR))
+                    .append(Component.text(" to navigate between pages."))
+                    .build();
+
+            player.sendMessage(footer);
+
+            if (currentPage < totalPages) {
+                TextComponent nextPage = Component.text()
+                        .append(Component.text("Next page: "))
+                        .append(Component.text("/baltop " + (currentPage + 1)).color(INFO_COLOR))
+                        .build();
+
+                player.sendMessage(nextPage);
+            }
+        }
     }
 
     /**
@@ -174,7 +244,13 @@ public class BaltopCommand implements CommandExecutor {
      * @return formatted component for the entry
      */
     private Component buildBalanceEntryComponent(int rank, @NotNull BalanceEntry entry) {
-        String formattedBalance = currencyFormatter.formatCurrency(entry.balance());
+        String formattedBalance;
+        try {
+            formattedBalance = currencyFormatter.formatCurrency(entry.balance());
+        } catch (Exception e) {
+            logger.warning(LOG_PREFIX + " Error formatting currency for balance " + entry.balance() + ": " + e.getMessage());
+            formattedBalance = String.valueOf(entry.balance());
+        }
 
         return Component.text()
                 .append(Component.text("#" + rank + " ").color(RANK_COLOR))
@@ -191,26 +267,27 @@ public class BaltopCommand implements CommandExecutor {
      */
     private void sendNoDataMessage(@NotNull Player player) {
         player.sendMessage(Component.text("No player balance data available.")
-                .color(NamedTextColor.YELLOW));
+                .color(INFO_COLOR));
     }
 
     /**
      * Logs the command usage for administrative purposes.
      *
      * @param player the player who executed the command
+     * @param page the page number viewed
      */
-    private void logCommandUsage(@NotNull Player player) {
-        logger.info(LOG_PREFIX + " " + player.getName() + " viewed balance rankings");
+    private void logCommandUsage(@NotNull Player player, int page) {
+        String pageInfo = page > 1 ? " (page " + page + ")" : "";
+        logger.info(LOG_PREFIX + " " + player.getName() + " viewed balance rankings" + pageInfo);
     }
 
     /**
      * Creates an error component with the specified text.
      *
-     * @param text the error message text
      * @return the formatted error component
      */
-    private Component errorComponent(@NotNull String text) {
-        return Component.text(text).color(ERROR_COLOR);
+    private Component errorComponent() {
+        return Component.text("An error occurred while retrieving balance rankings.").color(ERROR_COLOR);
     }
 
     /**
