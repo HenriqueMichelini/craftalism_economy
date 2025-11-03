@@ -1,5 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.economy.managers;
 
+import io.github.HenriqueMichelini.craftalism_economy.CraftalismEconomy;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -90,6 +91,14 @@ public class BalanceManager {
         } catch (IOException e) {
             plugin.getLogger().log(Level.SEVERE, LOG_PREFIX + "Failed to save balances", e);
         }
+    }
+
+    public void createBalance(UUID uuid) {
+        getAllBalances().put(uuid, getDefaultBalanceAmount());
+    }
+
+    public long getDefaultBalanceAmount() {
+        return CraftalismEconomy.getDefaultBalance();
     }
 
     public boolean checkIfBalanceExists(UUID playerUUID) {

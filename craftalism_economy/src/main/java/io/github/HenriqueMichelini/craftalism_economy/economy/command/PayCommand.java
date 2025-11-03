@@ -19,12 +19,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Command executor for the /pay command.
- *
- * Allows players to transfer money to other players in the economy system.
- * Includes validation, logging, and user feedback for all operations.
- */
 public class PayCommand implements CommandExecutor {
     private static final NamedTextColor ERROR_COLOR = NamedTextColor.RED;
     private static final NamedTextColor SUCCESS_COLOR = NamedTextColor.GREEN;
@@ -38,16 +32,6 @@ public class PayCommand implements CommandExecutor {
     private final PlayerValidator playerValidator;
     private final CurrencyParser currencyParser;
 
-    /**
-     * Creates a new PayCommand instance.
-     *
-     * @param economyManager the economy manager for processing payments (must not be null)
-     * @param balanceManager the balance manager for account operations (must not be null)
-     * @param plugin the plugin instance for logging (must not be null)
-     * @param currencyFormatter the formatter for currency display (must not be null)
-     * @param playerValidator the validator for player operations (must not be null)
-     * @throws IllegalArgumentException if any parameter is null
-     */
     public PayCommand(EconomyManager economyManager, BalanceManager balanceManager,
                       JavaPlugin plugin, CurrencyFormatter currencyFormatter,
                       PlayerValidator playerValidator, CurrencyParser currencyParser) {
@@ -78,12 +62,6 @@ public class PayCommand implements CommandExecutor {
         this.currencyParser = currencyParser;
     }
 
-    /**
-     * Legacy constructor for backward compatibility.
-     * Creates a new PlayerValidator instance internally.
-     *
-     * @deprecated Use the constructor that accepts PlayerValidator parameter
-     */
     @Deprecated
     public PayCommand(EconomyManager economyManager, BalanceManager balanceManager,
                       JavaPlugin plugin, CurrencyFormatter currencyFormatter, CurrencyParser currencyParser) {
@@ -93,7 +71,6 @@ public class PayCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, String @NotNull [] args) {
-        // Validate sender is a player
         if (!playerValidator.isSenderAPlayer(sender)) {
             sender.sendMessage(errorComponent("This command can only be used by players."));
             return true;
@@ -102,39 +79,33 @@ public class PayCommand implements CommandExecutor {
         Player payer = (Player) sender;
 
         try {
-            // Validate argument count
             if (!validateArguments(payer, args)) {
                 return true;
             }
 
-            // Resolve recipient player
             Optional<OfflinePlayer> payeeOpt = resolvePayee(payer, args[0]);
             if (payeeOpt.isEmpty()) {
-                return true; // Error message already sent
+                return true;
             }
 
             OfflinePlayer payee = payeeOpt.get();
             UUID payeeUuid = payee.getUniqueId();
 
-            // Check self-payment
             if (!validateNotSelfPayment(payer, payeeUuid)) {
                 return true;
             }
 
-            // Parse and validate amount
             Optional<Long> amountOpt = currencyParser.parseAmount(payer, args[1]);
             if (amountOpt.isEmpty()) {
-                return true; // Error message already sent by parser
+                return true;
             }
 
             long amount = amountOpt.get();
 
-            // Process the payment
             if (!processPayment(payer, payeeUuid, amount)) {
-                return true; // Error message already sent
+                return true;
             }
 
-            // Send success messages and log
             sendSuccessMessages(payer, payee, amount);
             logTransaction(payer, payee, amount);
 
@@ -147,13 +118,6 @@ public class PayCommand implements CommandExecutor {
         }
     }
 
-    /**
-     * Validates command arguments.
-     *
-     * @param payer the player executing the command
-     * @param args the command arguments
-     * @return true if arguments are valid, false otherwise
-     */
     private boolean validateArguments(Player payer, String[] args) {
         if (args.length != 2) {
             sendUsageMessage(payer);
@@ -175,13 +139,6 @@ public class PayCommand implements CommandExecutor {
         return true;
     }
 
-    /**
-     * Resolves the payee player from the given name.
-     *
-     * @param payer the player making the request
-     * @param payeeName the name of the payee
-     * @return Optional containing the resolved player, or empty if not found
-     */
     private Optional<OfflinePlayer> resolvePayee(Player payer, String payeeName) {
         Optional<OfflinePlayer> playerOpt = playerValidator.resolvePlayer(payer, payeeName);
 
@@ -193,7 +150,6 @@ public class PayCommand implements CommandExecutor {
         OfflinePlayer player = playerOpt.get();
         UUID playerUuid = player.getUniqueId();
 
-        // Check if the target player has a balance account
         if (!balanceManager.checkIfBalanceExists(playerUuid)) {
             payer.sendMessage(errorComponent("Player " + payeeName + " doesn't have an account in the economy system."));
             return Optional.empty();
@@ -202,13 +158,6 @@ public class PayCommand implements CommandExecutor {
         return playerOpt;
     }
 
-    /**
-     * Validates that the player is not trying to pay themselves.
-     *
-     * @param payer the player making the payment
-     * @param payeeUuid the UUID of the payment recipient
-     * @return true if not a self-payment, false otherwise
-     */
     private boolean validateNotSelfPayment(Player payer, UUID payeeUuid) {
         if (payer.getUniqueId().equals(payeeUuid)) {
             payer.sendMessage(errorComponent("You cannot pay yourself."));
@@ -217,14 +166,6 @@ public class PayCommand implements CommandExecutor {
         return true;
     }
 
-    /**
-     * Processes the payment transaction.
-     *
-     * @param payer the player making the payment
-     * @param payeeUuid the UUID of the payment recipient
-     * @param amount the amount to transfer
-     * @return true if payment was successful, false otherwise
-     */
     private boolean processPayment(Player payer, UUID payeeUuid, long amount) {
         boolean success = economyManager.transferBalance(payer.getUniqueId(), payeeUuid, amount);
 
@@ -236,24 +177,15 @@ public class PayCommand implements CommandExecutor {
         return true;
     }
 
-    /**
-     * Sends success messages to both payer and payee.
-     *
-     * @param payer the player who made the payment
-     * @param payee the player who received the payment
-     * @param amount the amount that was transferred
-     */
     private void sendSuccessMessages(Player payer, OfflinePlayer payee, long amount) {
         String formattedAmount = currencyFormatter.formatCurrency(amount);
         String payeeName = getPlayerName(payee);
 
-        // Send message to payer
         Component payerMessage = buildPaymentMessage(
                 "You paid ", formattedAmount, " to ", payeeName
         );
         payer.sendMessage(payerMessage);
 
-        // Send message to payee if online
         if (payee instanceof Player onlinePayee) {
             Component payeeMessage = buildReceivedMessage(
                     "You received ", formattedAmount, " from ", payer.getName()
@@ -262,32 +194,14 @@ public class PayCommand implements CommandExecutor {
         }
     }
 
-    /**
-     * Builds a payment confirmation message.
-     *
-     * @param parts alternating text and value parts
-     * @return the formatted component
-     */
     private Component buildPaymentMessage(String... parts) {
         return buildAlternatingColorMessage(parts);
     }
 
-    /**
-     * Builds a payment received message.
-     *
-     * @param parts alternating text and value parts
-     * @return the formatted component
-     */
     private Component buildReceivedMessage(String... parts) {
         return buildAlternatingColorMessage(parts);
     }
 
-    /**
-     * Builds a message with alternating colors for text and values.
-     *
-     * @param parts the message parts
-     * @return the formatted component
-     */
     private Component buildAlternatingColorMessage(String... parts) {
         TextComponent.Builder builder = Component.text();
 
@@ -299,24 +213,11 @@ public class PayCommand implements CommandExecutor {
         return builder.build();
     }
 
-    /**
-     * Gets the display name of a player.
-     *
-     * @param player the player
-     * @return the player's name or "Unknown Player" if not available
-     */
     private String getPlayerName(OfflinePlayer player) {
         String name = player.getName();
         return (name != null && !name.isEmpty()) ? name : "Unknown Player";
     }
 
-    /**
-     * Logs the completed transaction.
-     *
-     * @param payer the player who made the payment
-     * @param payee the player who received the payment
-     * @param amount the amount that was transferred
-     */
     private void logTransaction(Player payer, OfflinePlayer payee, long amount) {
         String formattedAmount = currencyFormatter.formatCurrency(amount);
         String payeeName = getPlayerName(payee);
@@ -329,21 +230,10 @@ public class PayCommand implements CommandExecutor {
         ));
     }
 
-    /**
-     * Sends usage instructions to the player.
-     *
-     * @param player the player to send the message to
-     */
     private void sendUsageMessage(Player player) {
         player.sendMessage(errorComponent("Usage: /pay <player> <amount>"));
     }
 
-    /**
-     * Creates an error component with the specified text.
-     *
-     * @param text the error message text
-     * @return the formatted error component
-     */
     private Component errorComponent(String text) {
         return Component.text(text).color(ERROR_COLOR);
     }
