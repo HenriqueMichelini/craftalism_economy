@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="hasSufficientFunds Tests" tests="17" skipped="0" failures="0" errors="0" timestamp="2025-11-18T02:46:18" hostname="pop-os" time="0.013">
+  <properties/>
+  <testcase name="Should handle negative balance correctly" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <testcase name="Should handle minimum long values" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <testcase name="Should return true for zero amount with zero balance" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <testcase name="Should return true for zero amount with non-negative balance" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <testcase name="Should handle maximum long values" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <testcase name="Should return true when balance equals amount" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <testcase name="[1] 1000, 500, true" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.002"/>
+  <testcase name="[2] 1000, 1000, true" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <testcase name="[3] 500, 1000, false" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.001"/>
+  <testcase name="[4] 0, 0, true" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.001"/>
+  <testcase name="[5] 100, 0, true" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <testcase name="[6] -100, 50, false" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <testcase name="[7] 1000, -50, false" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.001"/>
+  <testcase name="[8] -100, -50, false" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <testcase name="Should return true when balance is greater than amount" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <testcase name="Should return false when balance is less than amount" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <testcase name="Should return false when amount is negative even with sufficient balance" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$HasSufficientFundsTests" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="isGreaterThanZero Tests" tests="15" skipped="0" failures="0" errors="0" timestamp="2025-11-18T02:46:18" hostname="pop-os" time="0.012">
+  <properties/>
+  <testcase name="Should handle minimum long value" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.001"/>
+  <testcase name="[1] -1" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.0"/>
+  <testcase name="[2] -10" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.0"/>
+  <testcase name="[3] -100" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.0"/>
+  <testcase name="[4] -1000" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.003"/>
+  <testcase name="[5] -9223372036854775808" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.0"/>
+  <testcase name="Should return true for positive amounts" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.001"/>
+  <testcase name="Should return false for negative amounts" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.0"/>
+  <testcase name="[1] 1" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.0"/>
+  <testcase name="[2] 10" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.0"/>
+  <testcase name="[3] 100" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.0"/>
+  <testcase name="[4] 1000" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.001"/>
+  <testcase name="[5] 9223372036854775807" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.0"/>
+  <testcase name="Should handle maximum long value" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.0"/>
+  <testcase name="Should return false for zero" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$IsGreaterThanZeroTests" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

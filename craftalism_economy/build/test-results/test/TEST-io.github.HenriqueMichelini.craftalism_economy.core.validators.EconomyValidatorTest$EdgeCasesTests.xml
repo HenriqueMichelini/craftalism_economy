@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Edge Cases and Integration Tests" tests="5" skipped="0" failures="0" errors="0" timestamp="2025-11-18T02:46:18" hostname="pop-os" time="0.002">
+  <properties/>
+  <testcase name="Should maintain consistency for negative amounts" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$EdgeCasesTests" time="0.0"/>
+  <testcase name="Should maintain consistency between methods" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$EdgeCasesTests" time="0.0"/>
+  <testcase name="Should maintain consistency for zero amounts" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$EdgeCasesTests" time="0.0"/>
+  <testcase name="Should handle edge case where balance exactly matches Long.MAX_VALUE" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$EdgeCasesTests" time="0.0"/>
+  <testcase name="Should demonstrate the compound logic in hasSufficientFunds" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidatorTest$EdgeCasesTests" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

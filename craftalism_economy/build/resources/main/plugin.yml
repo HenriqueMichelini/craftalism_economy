@@ -1,0 +1,24 @@
+name: CraftalismEconomy
+version: 1.2
+main: io.github.HenriqueMichelini.craftalism_economy.CraftalismEconomy
+api-version: 1.21
+commands:
+  pay:
+    description: Pay another player.
+    usage: /pay <player> <amount>
+    permission: craftalism.pay
+  balance:
+    description: Check your balance.
+    usage: /balance
+    permission: craftalism.balance
+    permission-message: You do not have permission to use this command.
+  setbalance:
+    description: Set a player's balance (console/ops only).
+    usage: /setbalance <player> <amount>
+    permission: craftalism.setbalance
+    permission-message: You do not have permission to use this command.
+  baltop:
+    description: Show the top 10 players with the highest balance.
+    usage: /baltop
+    permission: craftalism.baltop
+    permission-message: You do not have permission to use this command.

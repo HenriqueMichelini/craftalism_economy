@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Offline Player Resolution Tests" tests="3" skipped="0" failures="0" errors="0" timestamp="2025-11-18T02:46:19" hostname="pop-os" time="0.02">
+  <properties/>
+  <testcase name="Should return empty when offline player has never played before" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.PlayerValidatorTest$OfflinePlayerTests" time="0.005"/>
+  <testcase name="Should return offline player when player exists but is offline" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.PlayerValidatorTest$OfflinePlayerTests" time="0.005"/>
+  <testcase name="Should verify UUID version validation works correctly" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.PlayerValidatorTest$OfflinePlayerTests" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

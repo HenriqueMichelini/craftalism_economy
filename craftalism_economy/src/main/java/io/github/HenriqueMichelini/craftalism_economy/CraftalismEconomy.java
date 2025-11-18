@@ -1,18 +1,18 @@
 package io.github.HenriqueMichelini.craftalism_economy;
 
-import io.github.HenriqueMichelini.craftalism_economy.economy.currency.CurrencyFormatter;
-import io.github.HenriqueMichelini.craftalism_economy.economy.currency.CurrencyParser;
-import io.github.HenriqueMichelini.craftalism_economy.economy.logs.LogManager;
-import io.github.HenriqueMichelini.craftalism_economy.economy.logs.PluginLogger;
-import io.github.HenriqueMichelini.craftalism_economy.economy.managers.EconomyManager;
-import io.github.HenriqueMichelini.craftalism_economy.economy.command.BalanceCommand;
-import io.github.HenriqueMichelini.craftalism_economy.economy.command.BaltopCommand;
-import io.github.HenriqueMichelini.craftalism_economy.economy.command.PayCommand;
-import io.github.HenriqueMichelini.craftalism_economy.economy.command.SetBalanceCommand;
-import io.github.HenriqueMichelini.craftalism_economy.economy.managers.BalanceManager;
-import io.github.HenriqueMichelini.craftalism_economy.economy.validators.CommandValidator;
-import io.github.HenriqueMichelini.craftalism_economy.economy.validators.EconomyValidator;
-import io.github.HenriqueMichelini.craftalism_economy.economy.validators.PlayerValidator;
+import io.github.HenriqueMichelini.craftalism_economy.core.currency.CurrencyFormatter;
+import io.github.HenriqueMichelini.craftalism_economy.core.currency.CurrencyParser;
+import io.github.HenriqueMichelini.craftalism_economy.core.logs.LogManager;
+import io.github.HenriqueMichelini.craftalism_economy.core.logs.PluginLogger;
+import io.github.HenriqueMichelini.craftalism_economy.core.managers.EconomyManager;
+import io.github.HenriqueMichelini.craftalism_economy.core.commands.BalanceCommand;
+import io.github.HenriqueMichelini.craftalism_economy.core.commands.BaltopCommand;
+import io.github.HenriqueMichelini.craftalism_economy.core.commands.PayCommand;
+import io.github.HenriqueMichelini.craftalism_economy.core.commands.SetBalanceCommand;
+import io.github.HenriqueMichelini.craftalism_economy.core.managers.BalanceManager;
+import io.github.HenriqueMichelini.craftalism_economy.core.validators.CommandValidator;
+import io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidator;
+import io.github.HenriqueMichelini.craftalism_economy.core.validators.PlayerValidator;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -25,6 +25,7 @@ import java.util.logging.Level;
 
 public final class CraftalismEconomy extends JavaPlugin {
     private EconomyManager economyManager;
+
     private CurrencyFormatter currencyFormatter;
     private CurrencyParser currencyParser;
 
