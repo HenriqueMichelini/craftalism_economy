@@ -1,0 +1,34 @@
+package io.github.HenriqueMichelini.craftalism_economy.domain.model;
+
+import java.time.Instant;
+import java.util.UUID;
+
+public class Player {
+    UUID uuid;
+    String name;
+    Instant createdAt;
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Instant createdAt) {
+        this.createdAt = createdAt;
+    }
+}

@@ -1,5 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.core.validators;
 
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.validators.EconomyValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

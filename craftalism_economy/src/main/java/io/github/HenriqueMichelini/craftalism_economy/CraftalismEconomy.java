@@ -1,18 +1,19 @@
 package io.github.HenriqueMichelini.craftalism_economy;
 
-import io.github.HenriqueMichelini.craftalism_economy.core.currency.CurrencyFormatter;
-import io.github.HenriqueMichelini.craftalism_economy.core.currency.CurrencyParser;
-import io.github.HenriqueMichelini.craftalism_economy.core.logs.LogManager;
-import io.github.HenriqueMichelini.craftalism_economy.core.logs.PluginLogger;
-import io.github.HenriqueMichelini.craftalism_economy.core.managers.EconomyManager;
-import io.github.HenriqueMichelini.craftalism_economy.core.commands.BalanceCommand;
-import io.github.HenriqueMichelini.craftalism_economy.core.commands.BaltopCommand;
-import io.github.HenriqueMichelini.craftalism_economy.core.commands.PayCommand;
-import io.github.HenriqueMichelini.craftalism_economy.core.commands.SetBalanceCommand;
-import io.github.HenriqueMichelini.craftalism_economy.core.managers.BalanceManager;
-import io.github.HenriqueMichelini.craftalism_economy.core.validators.CommandValidator;
-import io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidator;
-import io.github.HenriqueMichelini.craftalism_economy.core.validators.PlayerValidator;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.currency.CurrencyFormatter;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.currency.CurrencyParser;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.LogManager;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.PluginLogger;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.BalanceMessages;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.CurrencyMessages;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.PayMessages;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.managers.EconomyManager;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.BalanceCommand;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.BaltopCommand;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.PayCommand;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.SetBalanceCommand;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.validators.EconomyValidator;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.validators.PlayerValidator;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -33,7 +34,7 @@ public final class CraftalismEconomy extends JavaPlugin {
     private EconomyValidator economyValidator;
     private CommandValidator commandValidator;
 
-    private static long defaultBalance;
+    private static long defaultBalanceAmount;
     private final File balancesFile = new File(this.getDataFolder(), "balances.yml");
     private final FileConfiguration balancesConfig = YamlConfiguration.loadConfiguration(balancesFile);
     private BalanceManager balanceManager;
@@ -46,14 +47,14 @@ public final class CraftalismEconomy extends JavaPlugin {
         saveDefaultConfig();
         reloadConfig();
 
-        defaultBalance = parseDefaultBalance();
+        defaultBalanceAmount = parseDefaultBalance();
         this.balanceManager = new BalanceManager(balancesFile, balancesConfig, this);
         this.economyValidator = new EconomyValidator();
         this.playerValidator = new PlayerValidator();
         this.commandValidator = new CommandValidator();
-        this.currencyParser = new CurrencyParser();
         this.logManager = new LogManager(this);
         this.logger = new PluginLogger(this, logManager);
+        this.currencyParser = new CurrencyParser(new CurrencyMessages(logger));
 
         initializeMoneyFormat();
         initializeEconomyManager();
@@ -100,8 +101,8 @@ public final class CraftalismEconomy extends JavaPlugin {
     }
 
     private void registerCommands() {
-        registerCommand("pay", new PayCommand(economyManager, balanceManager, this, currencyFormatter, currencyParser));
-        registerCommand("balance", new BalanceCommand(balanceManager, this, currencyFormatter, playerValidator, logger));
+        registerCommand("pay", new PayCommand(economyManager, balanceManager, this, currencyFormatter, playerValidator, currencyParser, new PayMessages(logger)));
+        registerCommand("balance", new BalanceCommand(balanceManager, this, currencyFormatter, playerValidator, logger, new BalanceMessages(logger)));
         registerCommand("baltop", new BaltopCommand(balanceManager, this, currencyFormatter));
         registerCommand("setbalance", new SetBalanceCommand(balanceManager, this, currencyFormatter, playerValidator, currencyParser));
     }
@@ -143,8 +144,8 @@ public final class CraftalismEconomy extends JavaPlugin {
 
     public EconomyValidator getEconomyValidator() { return economyValidator; }
 
-    public static long getDefaultBalance() {
-        return defaultBalance;
+    public static long getDefaultBalanceAmount() {
+        return defaultBalanceAmount;
     }
 
     public CurrencyFormatter getCurrencyFormatter() {

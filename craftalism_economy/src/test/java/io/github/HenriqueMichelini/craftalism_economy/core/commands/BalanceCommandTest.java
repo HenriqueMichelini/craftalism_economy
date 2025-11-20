@@ -1,9 +1,9 @@
 package io.github.HenriqueMichelini.craftalism_economy.core.commands;
 
-import io.github.HenriqueMichelini.craftalism_economy.core.currency.CurrencyFormatter;
-import io.github.HenriqueMichelini.craftalism_economy.core.logs.PluginLogger;
-import io.github.HenriqueMichelini.craftalism_economy.core.managers.BalanceManager;
-import io.github.HenriqueMichelini.craftalism_economy.core.validators.PlayerValidator;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.currency.CurrencyFormatter;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.PluginLogger;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.validators.PlayerValidator;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.BalanceCommand;
 import net.kyori.adventure.text.Component;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;

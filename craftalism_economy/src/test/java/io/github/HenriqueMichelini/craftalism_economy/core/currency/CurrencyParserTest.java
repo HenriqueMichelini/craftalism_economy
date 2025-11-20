@@ -1,5 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.core.currency;
 
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.currency.CurrencyFormatter;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.currency.CurrencyParser;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.*;

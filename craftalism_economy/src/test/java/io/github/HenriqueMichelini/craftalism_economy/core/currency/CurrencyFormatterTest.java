@@ -1,5 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.core.currency;
 
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.currency.CurrencyFormatter;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

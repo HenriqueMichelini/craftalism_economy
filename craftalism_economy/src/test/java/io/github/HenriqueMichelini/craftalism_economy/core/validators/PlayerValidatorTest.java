@@ -1,5 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.core.validators;
 
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.validators.PlayerValidator;
 import org.bukkit.OfflinePlayer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

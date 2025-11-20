@@ -1,7 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.core.commands;
 
-import io.github.HenriqueMichelini.craftalism_economy.core.currency.CurrencyFormatter;
-import io.github.HenriqueMichelini.craftalism_economy.core.managers.BalanceManager;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.currency.CurrencyFormatter;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.BaltopCommand;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;

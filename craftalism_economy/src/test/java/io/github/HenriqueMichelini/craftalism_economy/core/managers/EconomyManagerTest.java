@@ -1,6 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.core.managers;
 
-import io.github.HenriqueMichelini.craftalism_economy.core.validators.EconomyValidator;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.validators.EconomyValidator;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.managers.EconomyManager;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
