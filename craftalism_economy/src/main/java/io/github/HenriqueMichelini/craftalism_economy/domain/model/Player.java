@@ -8,6 +8,12 @@ public class Player {
     String name;
     Instant createdAt;
 
+    public Player(UUID uuid, String name, Instant createdAt) {
+        this.uuid = uuid;
+        this.name = name;
+        this.createdAt = createdAt;
+    }
+
     public UUID getUuid() {
         return uuid;
     }
