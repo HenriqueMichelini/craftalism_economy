@@ -5,12 +5,12 @@ import java.net.http.*;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
-public class ApiClient {
+public class HttpClientService {
 
     private final HttpClient http;
     private final String baseUrl;
 
-    public ApiClient(String baseUrl) {
+    public HttpClientService(String baseUrl) {
         this.http = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_2)
                 .connectTimeout(Duration.ofSeconds(5))
