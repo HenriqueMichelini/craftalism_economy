@@ -24,6 +24,8 @@ dependencies {
     testRuntimeOnly('org.junit.platform:junit-platform-launcher')
     testImplementation "org.mockito:mockito-core:5.19.0"
     testImplementation 'org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.0.0'
+
+    implementation 'org.apache.httpcomponents:httpclient:4.5'
 }
 
 test {
