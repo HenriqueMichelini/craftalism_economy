@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="Online Player Resolution Tests" tests="3" skipped="0" failures="0" errors="0" timestamp="2025-11-18T02:46:19" hostname="pop-os" time="0.014">
-  <properties/>
-  <testcase name="Should return online player when player is currently online" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.PlayerValidatorTest$OnlinePlayerTests" time="0.004"/>
-  <testcase name="Should prioritize online player over offline player with same name" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.PlayerValidatorTest$OnlinePlayerTests" time="0.005"/>
-  <testcase name="Should return online player with exact name match (case sensitive)" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.PlayerValidatorTest$OnlinePlayerTests" time="0.005"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>

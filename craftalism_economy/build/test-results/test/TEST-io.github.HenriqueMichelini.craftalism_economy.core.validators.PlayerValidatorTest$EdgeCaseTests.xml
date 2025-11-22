@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="Edge Cases and Error Handling" tests="2" skipped="0" failures="0" errors="0" timestamp="2025-11-18T02:46:18" hostname="pop-os" time="1.131">
-  <properties/>
-  <testcase name="Should handle method execution without exceptions" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.PlayerValidatorTest$EdgeCaseTests" time="1.125"/>
-  <testcase name="Should return empty when player doesn't exist" classname="io.github.HenriqueMichelini.craftalism_economy.core.validators.PlayerValidatorTest$EdgeCaseTests" time="0.005"/>
-  <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[]]></system-err>
-</testsuite>
