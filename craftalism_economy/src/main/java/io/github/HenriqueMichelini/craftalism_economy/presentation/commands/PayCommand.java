@@ -1,8 +1,9 @@
 package io.github.HenriqueMichelini.craftalism_economy.presentation.commands;
 
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.PayMessages;
-import io.github.HenriqueMichelini.craftalism_economy.application.service.PayApplicationService;
+import io.github.HenriqueMichelini.craftalism_economy.application.service.PayCommandApplicationService;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.PayResult;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.validation.PlayerNameCheck;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -12,11 +13,13 @@ import org.jetbrains.annotations.NotNull;
 public class PayCommand implements CommandExecutor {
 
     private final PayMessages messages;
-    private final PayApplicationService service;
+    private final PayCommandApplicationService service;
+    private final PlayerNameCheck playerNameCheck;
 
-    public PayCommand(PayMessages messages, PayApplicationService service) {
+    public PayCommand(PayMessages messages, PayCommandApplicationService service, PlayerNameCheck playerNameCheck) {
         this.messages = messages;
         this.service = service;
+        this.playerNameCheck = playerNameCheck;
     }
 
     @Override
@@ -32,12 +35,24 @@ public class PayCommand implements CommandExecutor {
         }
 
         String targetName = args[0];
+
+        if (!playerNameCheck.isValid(targetName)) {
+            messages.sendPayInvalidName(player);
+            return true;
+        }
+
         String amountStr = args[1];
+
+        if (amountStr.isEmpty()) {
+            messages.sendPayAmountEmpty(player);
+            return true;
+        }
 
         if (!amountStr.matches("\\d+")) {
             messages.sendPayInvalidAmount(player);
             return true;
         }
+
 
         long amount = Long.parseLong(amountStr);
 

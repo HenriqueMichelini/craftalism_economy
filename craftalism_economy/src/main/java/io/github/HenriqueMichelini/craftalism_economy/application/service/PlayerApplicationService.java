@@ -46,6 +46,15 @@ public class PlayerApplicationService {
                 });
     }
 
+    public CompletableFuture<String> getNameByUuid(UUID uuid) {
+        return api.getPlayerByUuid(uuid).thenApply(PlayerResponseDTO::name);
+    }
+
+    public CompletableFuture<UUID> getUuidByName(String name) {
+        return api.getPlayerByName(name)
+                .thenApply(PlayerResponseDTO::uuid);
+    }
+
     public CompletableFuture<PlayerResponseDTO> getOrCreatePlayer(UUID uuid, String name) {
         return api.getPlayerByUuid(uuid)
                 .exceptionallyCompose(ex -> {

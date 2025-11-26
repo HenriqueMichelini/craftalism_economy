@@ -1,14 +1,17 @@
 package io.github.HenriqueMichelini.craftalism_economy;
 
-import io.github.HenriqueMichelini.craftalism_economy.application.service.PayApplicationService;
-import io.github.HenriqueMichelini.craftalism_economy.application.service.PlayerApplicationService;
+import io.github.HenriqueMichelini.craftalism_economy.application.service.BalanceCommandApplicationService;
+import io.github.HenriqueMichelini.craftalism_economy.application.service.PayCommandApplicationService;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.CurrencyFormatter;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.CurrencyParser;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.LogManager;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.PluginLogger;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.BalanceMessages;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.CurrencyMessages;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.PayMessages;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.BalanceCommand;
 import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.PayCommand;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.validation.PlayerNameCheck;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -23,9 +26,12 @@ public final class CraftalismEconomy extends JavaPlugin {
     private PluginLogger logger;
 
     private PayMessages payMessages;
-    private PayApplicationService payApplicationService;
+    private BalanceMessages balanceMessages;
 
-    private PlayerApplicationService playerApplicationService;
+    private PayCommandApplicationService payCommandApplicationService;
+    private BalanceCommandApplicationService balanceCommandApplicationService;
+
+    private PlayerNameCheck playerNameCheck;
 
     @Override
     public void onEnable() {
@@ -75,7 +81,8 @@ public final class CraftalismEconomy extends JavaPlugin {
     }
 
     private void registerCommands() {
-        registerCommand("pay", new PayCommand(payMessages, payApplicationService));
+        registerCommand("pay", new PayCommand(payMessages, payCommandApplicationService, playerNameCheck));
+        registerCommand("balance", new BalanceCommand(balanceMessages, playerNameCheck, balanceCommandApplicationService));
 //        registerCommand("balance", new BalanceCommand(balanceManager, this, currencyFormatter, playerValidator, logger, new BalanceMessages(logger)));
 //        registerCommand("baltop", new BaltopCommand(balanceManager, this, currencyFormatter));
 //        registerCommand("setbalance", new SetBalanceCommand(balanceManager, this, currencyFormatter, playerValidator, currencyParser));

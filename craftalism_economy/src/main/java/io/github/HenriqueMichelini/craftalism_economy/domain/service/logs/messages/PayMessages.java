@@ -53,6 +53,10 @@ public class PayMessages {
         pluginLogger.send(messageReceiver, "pay.error.no_account", targetPlaceholder);
     }
 
+    public void sendPayInvalidName(Player messageReceiver) {
+        pluginLogger.send(messageReceiver, "pay.error.invalid_name");
+    }
+
     public void sendPaySelfPayment(Player messageReceiver) {
         pluginLogger.send(messageReceiver, "pay.error.self_payment");
     }

@@ -13,7 +13,7 @@ public class PlayerCacheRepository {
     }
 
     public void save(Player player) {
-        cache.put(player.getUuid(), new Player(player.getUuid(), player.getName(), player.getCreatedAt())); // copy constructor
+        cache.put(player.getUuid(), new Player(player.getUuid(), player.getName(), player.getCreatedAt()));
     }
 
     public void delete(UUID uuid) {

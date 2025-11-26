@@ -10,14 +10,14 @@ import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.Transact
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public class PayApplicationService {
+public class PayCommandApplicationService {
 
     private final PlayerApplicationService playerService;
     private final PlayerApiService playerApi;
     private final BalanceApiService balanceApi;
     private final TransactionApiService transactionApi;
 
-    public PayApplicationService(
+    public PayCommandApplicationService(
             PlayerApplicationService playerService,
             PlayerApiService playerApi,
             BalanceApiService balanceApi,
@@ -81,7 +81,7 @@ public class PayApplicationService {
             long amount
     ) {
         return balanceApi.getBalance(payerUuid)
-                .thenCompose(balance -> checkBalanceAndTransfer(payerUuid, receiverUuid, amount, balance));
+                .thenCompose(balance -> checkBalanceAndTransfer(payerUuid, receiverUuid, amount, balance.amount()));
     }
 
     private CompletableFuture<PayResult> checkBalanceAndTransfer(

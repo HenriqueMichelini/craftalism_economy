@@ -2,19 +2,27 @@ package io.github.HenriqueMichelini.craftalism_economy.infra.api.service;
 
 import com.google.gson.Gson;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.client.HttpClientService;
-import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.PlayerResponseDTO;
-import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.PlayerRequestDTO;
+import io.github.HenriqueMichelini.craftalism_economy.infra.config.GsonFactory;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.exception.NotFoundException;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.*;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class PlayerApiService {
-    private final HttpClientService http;
-    private final Gson gson = new Gson();
 
+    private final HttpClientService http;
+    private final Gson gson;
+
+    // Construtor padrão (usa GsonFactory)
     public PlayerApiService(HttpClientService http) {
+        this(http, GsonFactory.getInstance());
+    }
+
+    // Construtor com Gson customizado (para testes)
+    public PlayerApiService(HttpClientService http, Gson gson) {
         this.http = http;
+        this.gson = gson;
     }
 
     public CompletableFuture<PlayerResponseDTO> getPlayerByUuid(UUID uuid) {
@@ -43,7 +51,6 @@ public class PlayerApiService {
 
     public CompletableFuture<PlayerResponseDTO> createPlayer(UUID uuid, String name) {
         PlayerRequestDTO dto = new PlayerRequestDTO(uuid, name);
-
         return http.post("/players", gson.toJson(dto))
                 .thenApply(response -> gson.fromJson(response.body(), PlayerResponseDTO.class));
     }

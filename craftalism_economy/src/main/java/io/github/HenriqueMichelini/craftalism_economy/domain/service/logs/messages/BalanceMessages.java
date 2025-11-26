@@ -24,6 +24,10 @@ public class BalanceMessages {
         pluginLogger.send(messageReceiver, "balance.other.success", targetNamePlaceholder, balancePlaceholder);
     }
 
+    public void sendBalanceInvalidName(Player messageReceiver) {
+        pluginLogger.send(messageReceiver, "balance.other.invalid_name");
+    }
+
     public void sendBalanceOtherNotFound(Player messageReceiver, String targetName) {
         LogManager.Placeholder targetNamePlaceholder = new LogManager.Placeholder("target", targetName);
 
