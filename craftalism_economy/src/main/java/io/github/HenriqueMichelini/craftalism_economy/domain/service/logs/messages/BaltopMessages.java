@@ -11,12 +11,10 @@ public class BaltopMessages {
         this.pluginLogger = pluginLogger;
     }
 
-    public void sendBaltopHeader(Player messageReceiver, String count, String page, String total) {
+    public void sendBaltopHeader(Player messageReceiver, String count) {
         LogManager.Placeholder countPlaceholder = new LogManager.Placeholder("count", count);
-        LogManager.Placeholder pagePlaceholder = new LogManager.Placeholder("page", page);
-        LogManager.Placeholder totalPlaceholder = new LogManager.Placeholder("total", total);
 
-        pluginLogger.send(messageReceiver, "baltop.header", countPlaceholder, pagePlaceholder, totalPlaceholder);
+        pluginLogger.send(messageReceiver, "baltop.header", countPlaceholder);
     }
 
     public void sendBaltopEntry(Player messageReceiver, String rank, String player, String balance) {
@@ -27,25 +25,16 @@ public class BaltopMessages {
         pluginLogger.send(messageReceiver, "baltop.entry", rankPlaceholder, playerPlaceholder, balancePlaceholder);
     }
 
-    public void sendBaltopFooterNext(Player messageReceiver, String nextPage) {
-        LogManager.Placeholder nextPlaceholder = new LogManager.Placeholder("next", nextPage);
-
-        pluginLogger.send(messageReceiver, "baltop.footer_next", nextPlaceholder);
-    }
-
     public void sendBaltopNoData(Player messageReceiver) {
         pluginLogger.send(messageReceiver, "baltop.no_data");
     }
 
-    public void sendBaltopInvalidPage(Player messageReceiver) {
-        pluginLogger.send(messageReceiver, "baltop.invalid_page");
+    public void sendBaltopLoading(Player messageReceiver) {
+        pluginLogger.send(messageReceiver, "baltop.loading");
     }
 
-    public void sendBaltopPageNotExist(Player messageReceiver, String page, String total) {
-        LogManager.Placeholder pagePlaceholder = new LogManager.Placeholder("page", page);
-        LogManager.Placeholder totalPlaceholder = new LogManager.Placeholder("total", total);
-
-        pluginLogger.send(messageReceiver, "baltop.page_not_exist", pagePlaceholder, totalPlaceholder);
+    public void sendBaltopPlayerOnly() {
+        pluginLogger.info("baltop.player_only");
     }
 
     public void sendBaltopError(Player messageReceiver) {

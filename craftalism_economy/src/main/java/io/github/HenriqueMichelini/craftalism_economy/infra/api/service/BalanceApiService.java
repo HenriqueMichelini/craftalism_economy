@@ -1,11 +1,14 @@
 package io.github.HenriqueMichelini.craftalism_economy.infra.api.service;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.client.HttpClientService;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.BalanceResponseDTO;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.BalanceUpdateRequestDTO;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.exception.NotFoundException;
 
+import java.lang.reflect.Type;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -59,5 +62,13 @@ public class BalanceApiService {
 
         return http.post("/balances/" + uuid + "/withdraw", gson.toJson(dto))
                 .thenApply(resp -> null);
+    }
+
+    public CompletableFuture<List<BalanceResponseDTO>> getTopBalances(int limit) {
+        return http.get("/balances/top?limit=" + limit)
+                .thenApply(resp -> {
+                    Type listType = new TypeToken<List<BalanceResponseDTO>>(){}.getType();
+                    return gson.fromJson(resp.body(), listType);
+                });
     }
 }

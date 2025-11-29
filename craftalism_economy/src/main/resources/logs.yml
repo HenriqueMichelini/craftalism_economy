@@ -7,14 +7,13 @@ system:
   internal_error: "&cAn unexpected error occurred. Please contact an administrator."
 
 baltop:
-  header: "&eTop {count} Richest Players (Page {page}/{total}):"
-  entry: "&e#{rank} &a{player} &7- &b{balance}"
-  footer_next: "&7Use &e/baltop {next}&7 to view the next page."
-  no_data: "&eNo player balance data available."
-  invalid_page: "&cInvalid page number."
-  page_not_exist: "&cPage {page} does not exist. Total pages: {total}."
+  header: "&6=== Ӂ === &rTop 10 Richest Players &6=== Ӂ ===:"
+  entry: "&7#{rank} &r{player} &7- &6{balance}"
+  no_data: "&cNo player balance data available."
   error: "&cAn error occurred while retrieving balance rankings."
-  usage: "&cUsage: /baltop [page number]"
+  usage: "&cUsage: /baltop"
+  player_only: "&cOnly players can use this command."
+  loading: "&eLoading balances..."
 
 balance:
   self:

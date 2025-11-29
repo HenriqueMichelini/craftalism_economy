@@ -15,6 +15,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -51,7 +53,7 @@ class BalanceApiServiceTest {
     @Test
     @DisplayName("Should get balance successfully")
     void shouldGetBalanceSuccessfully() throws ExecutionException, InterruptedException {
-        long expectedBalance = 1000_0000L; // $1000.00
+        long expectedBalance = 1000_0000L;
         BalanceResponseDTO responseDTO = new BalanceResponseDTO(testUuid, expectedBalance);
         String jsonResponse = gson.toJson(responseDTO);
 
@@ -122,7 +124,7 @@ class BalanceApiServiceTest {
     @Test
     @DisplayName("Should deposit amount successfully")
     void shouldDepositAmountSuccessfully() throws ExecutionException, InterruptedException {
-        long depositAmount = 500_0000L; // $500.00
+        long depositAmount = 500_0000L;
         BalanceUpdateRequestDTO requestDTO = new BalanceUpdateRequestDTO(depositAmount);
         String expectedJson = gson.toJson(requestDTO);
 
@@ -187,7 +189,7 @@ class BalanceApiServiceTest {
     @Test
     @DisplayName("Should withdraw amount successfully")
     void shouldWithdrawAmountSuccessfully() throws ExecutionException, InterruptedException {
-        long withdrawAmount = 300_0000L; // $300.00
+        long withdrawAmount = 300_0000L;
         BalanceUpdateRequestDTO requestDTO = new BalanceUpdateRequestDTO(withdrawAmount);
         String expectedJson = gson.toJson(requestDTO);
 
@@ -293,6 +295,116 @@ class BalanceApiServiceTest {
 
         assertNotNull(capturedJson[0]);
         assertTrue(capturedJson[0].contains("\"amount\":54321"));
+    }
+
+    @Test
+    @DisplayName("Should get top balances successfully")
+    void shouldGetTopBalancesSuccessfully() throws ExecutionException, InterruptedException {
+        int limit = 10;
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        UUID uuid3 = UUID.randomUUID();
+
+        List<BalanceResponseDTO> expectedBalances = List.of(
+                new BalanceResponseDTO(uuid1, 1000_0000L),
+                new BalanceResponseDTO(uuid2, 500_0000L),
+                new BalanceResponseDTO(uuid3, 250_0000L)
+        );
+
+        String jsonResponse = gson.toJson(expectedBalances);
+        HttpResponse<String> mockResponse = createMockResponse(jsonResponse);
+
+        when(httpClient.get("/balances/top?limit=" + limit))
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+        List<BalanceResponseDTO> result = service.getTopBalances(limit).get();
+
+        assertNotNull(result);
+        assertEquals(3, result.size());
+        assertEquals(uuid1, result.get(0).uuid());
+        assertEquals(1000_0000L, result.get(0).amount());
+        assertEquals(uuid2, result.get(1).uuid());
+        assertEquals(500_0000L, result.get(1).amount());
+
+        verify(httpClient).get("/balances/top?limit=" + limit);
+    }
+
+    @Test
+    @DisplayName("Should get top balances with custom limit")
+    void shouldGetTopBalancesWithCustomLimit() throws ExecutionException, InterruptedException {
+        int customLimit = 25;
+        List<BalanceResponseDTO> balances = new ArrayList<>();
+        for (int i = 0; i < customLimit; i++) {
+            balances.add(new BalanceResponseDTO(UUID.randomUUID(), (long) i * 10000));
+        }
+
+        String jsonResponse = gson.toJson(balances);
+        HttpResponse<String> mockResponse = createMockResponse(jsonResponse);
+
+        when(httpClient.get("/balances/top?limit=" + customLimit))
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+        List<BalanceResponseDTO> result = service.getTopBalances(customLimit).get();
+
+        assertEquals(customLimit, result.size());
+    }
+
+    @Test
+    @DisplayName("Should get empty list when no balances exist")
+    void shouldGetEmptyListWhenNoBalancesExist() throws ExecutionException, InterruptedException {
+        String jsonResponse = gson.toJson(List.of());
+        HttpResponse<String> mockResponse = createMockResponse(jsonResponse);
+
+        when(httpClient.get("/balances/top?limit=10"))
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+        List<BalanceResponseDTO> result = service.getTopBalances(10).get();
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Should handle HTTP error on get top balances")
+    void shouldHandleHttpErrorOnGetTopBalances() {
+        when(httpClient.get("/balances/top?limit=10"))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("API Error")));
+
+        CompletableFuture<List<BalanceResponseDTO>> result = service.getTopBalances(10);
+
+        ExecutionException exception = assertThrows(ExecutionException.class, result::get);
+        assertEquals("API Error", exception.getCause().getMessage());
+    }
+
+    @Test
+    @DisplayName("Should handle malformed JSON on get top balances")
+    void shouldHandleMalformedJsonOnGetTopBalances() {
+        HttpResponse<String> mockResponse = createMockResponse("{invalid json}");
+        when(httpClient.get("/balances/top?limit=10"))
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+        assertThrows(ExecutionException.class,
+                () -> service.getTopBalances(10).get());
+    }
+
+    @Test
+    @DisplayName("Should get top balances with limit 1")
+    void shouldGetTopBalancesWithLimitOne() throws ExecutionException, InterruptedException {
+        UUID topUuid = UUID.randomUUID();
+        List<BalanceResponseDTO> balances = List.of(
+                new BalanceResponseDTO(topUuid, 9999_0000L)
+        );
+
+        String jsonResponse = gson.toJson(balances);
+        HttpResponse<String> mockResponse = createMockResponse(jsonResponse);
+
+        when(httpClient.get("/balances/top?limit=1"))
+                .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+        List<BalanceResponseDTO> result = service.getTopBalances(1).get();
+
+        assertEquals(1, result.size());
+        assertEquals(topUuid, result.getFirst().uuid());
     }
 
     @SuppressWarnings("unchecked")
