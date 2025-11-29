@@ -1,15 +1,24 @@
 package io.github.HenriqueMichelini.craftalism_economy;
 
-import io.github.HenriqueMichelini.craftalism_economy.application.service.BalanceCommandApplicationService;
-import io.github.HenriqueMichelini.craftalism_economy.application.service.PayCommandApplicationService;
+import com.google.gson.Gson;
+import io.github.HenriqueMichelini.craftalism_economy.application.service.*;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.CurrencyFormatter;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.CurrencyParser;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.LogManager;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.PluginLogger;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.BalanceMessages;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.BaltopMessages;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.CurrencyMessages;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.PayMessages;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.client.HttpClientService;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.repository.BalanceCacheRepository;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.repository.PlayerCacheRepository;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.BalanceApiService;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.PlayerApiService;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.TransactionApiService;
+import io.github.HenriqueMichelini.craftalism_economy.infra.config.ConnectionConfig;
 import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.BalanceCommand;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.BaltopCommand;
 import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.PayCommand;
 import io.github.HenriqueMichelini.craftalism_economy.presentation.validation.PlayerNameCheck;
 import org.bukkit.command.CommandExecutor;
@@ -19,19 +28,38 @@ import java.util.Locale;
 import java.util.Objects;
 
 public final class CraftalismEconomy extends JavaPlugin {
-    private CurrencyFormatter currencyFormatter;
-    private CurrencyParser currencyParser;
-
     private LogManager logManager;
     private PluginLogger logger;
 
     private PayMessages payMessages;
     private BalanceMessages balanceMessages;
+    private BaltopMessages baltopMessages;
 
+    private PlayerNameCheck playerNameCheck = new PlayerNameCheck();
+
+    private CurrencyFormatter currencyFormatter;
+    private CurrencyParser currencyParser;
+
+    private ConnectionConfig connectionConfig;
+    private String baseUrl;
+
+    private Gson gson = new Gson();
+
+    private HttpClientService client;
+
+    private PlayerCacheRepository playerCacheRepository = new PlayerCacheRepository();
+    private BalanceCacheRepository balanceCacheRepository = new BalanceCacheRepository();
+
+    private PlayerApiService playerApiService;
+    private BalanceApiService balanceApiService;
+    private TransactionApiService transactionApiService;
+
+    private PlayerApplicationService playerApplicationService;
     private PayCommandApplicationService payCommandApplicationService;
+    private BalanceApplicationService balanceApplicationService;
     private BalanceCommandApplicationService balanceCommandApplicationService;
+    private BaltopCommandApplicationService baltopCommandApplicationService;
 
-    private PlayerNameCheck playerNameCheck;
 
     @Override
     public void onEnable() {
@@ -40,9 +68,29 @@ public final class CraftalismEconomy extends JavaPlugin {
 
         this.logManager = new LogManager(this);
         this.logger = new PluginLogger(this, logManager);
-        this.currencyParser = new CurrencyParser(new CurrencyMessages(logger));
+
+        this.payMessages = new PayMessages(logger);
+        this.balanceMessages = new BalanceMessages(logger);
+        this.baltopMessages = new BaltopMessages(logger);
 
         initializeMoneyFormat();
+        this.currencyParser = new CurrencyParser(new CurrencyMessages(logger));
+
+        this.connectionConfig = new ConnectionConfig(this);
+        this.baseUrl = connectionConfig.getUrl();
+
+        this.client = new HttpClientService(baseUrl);
+
+        this.playerApiService = new PlayerApiService(client, gson);
+        this.balanceApiService = new BalanceApiService(client);
+        this.transactionApiService = new TransactionApiService(client);
+
+        this.playerApplicationService = new PlayerApplicationService(playerApiService, playerCacheRepository);
+        this.payCommandApplicationService = new PayCommandApplicationService(playerApplicationService, playerApiService, balanceApiService, transactionApiService);
+        this.balanceApplicationService = new BalanceApplicationService(balanceApiService, balanceCacheRepository);
+        this.balanceCommandApplicationService = new BalanceCommandApplicationService(playerApplicationService, balanceApplicationService);
+        this.baltopCommandApplicationService = new BaltopCommandApplicationService(balanceApiService, playerApiService);
+
         registerCommands();
 
         getLogger().info("Plugin enabled successfully");
@@ -83,8 +131,7 @@ public final class CraftalismEconomy extends JavaPlugin {
     private void registerCommands() {
         registerCommand("pay", new PayCommand(payMessages, payCommandApplicationService, playerNameCheck));
         registerCommand("balance", new BalanceCommand(balanceMessages, playerNameCheck, balanceCommandApplicationService));
-//        registerCommand("balance", new BalanceCommand(balanceManager, this, currencyFormatter, playerValidator, logger, new BalanceMessages(logger)));
-//        registerCommand("baltop", new BaltopCommand(balanceManager, this, currencyFormatter));
+        registerCommand("baltop", new BaltopCommand(baltopMessages, baltopCommandApplicationService, currencyFormatter));
 //        registerCommand("setbalance", new SetBalanceCommand(balanceManager, this, currencyFormatter, playerValidator, currencyParser));
     }
 
