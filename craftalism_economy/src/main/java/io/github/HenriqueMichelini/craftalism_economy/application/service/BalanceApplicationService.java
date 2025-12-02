@@ -24,22 +24,20 @@ public class BalanceApplicationService {
     public CompletableFuture<Optional<Balance>> getBalance(UUID uuid) {
         return api.getBalance(uuid)
                 .thenApply(dto -> Optional.of(toBalance(dto)))
-                .exceptionally(ex -> {
-                    if (isNotFoundException(ex)) {
-                        return Optional.empty();
-                    }
-                    throw new CompletionException(ex);
-                });
+                .exceptionally(ex ->
+                        isNotFoundException(ex)
+                                ? Optional.empty()
+                                : throwAsCompletion(ex)
+                );
     }
 
     public CompletableFuture<Balance> getOrCreateBalance(UUID uuid) {
         return api.getBalance(uuid)
-                .exceptionallyCompose(ex -> {
-                    if (isNotFoundException(ex)) {
-                        return api.createBalance(uuid);
-                    }
-                    return CompletableFuture.failedFuture(ex);
-                })
+                .exceptionallyCompose(ex ->
+                        isNotFoundException(ex)
+                                ? api.createBalance(uuid)
+                                : CompletableFuture.failedFuture(ex)
+                )
                 .thenApply(this::toBalance);
     }
 
@@ -66,6 +64,15 @@ public class BalanceApplicationService {
                 .orElseGet(() -> loadOnJoin(uuid));
     }
 
+    public CompletableFuture<Balance> updateBalance(UUID uuid, Long amount) {
+        return api.updateBalance(uuid, amount)
+                .thenApply(dto -> {
+                    Balance balance = toBalance(dto);
+                    cache.save(balance);
+                    return balance;
+                });
+    }
+
     private Balance toBalance(BalanceResponseDTO dto) {
         return new Balance(dto.uuid(), dto.amount());
     }
@@ -73,5 +80,9 @@ public class BalanceApplicationService {
     private boolean isNotFoundException(Throwable ex) {
         Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
         return cause instanceof NotFoundException;
+    }
+
+    private <T> T throwAsCompletion(Throwable ex) {
+        throw new CompletionException(ex);
     }
 }

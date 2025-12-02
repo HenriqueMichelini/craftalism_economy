@@ -1,5 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.application.dto;
 
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.BalanceStatus;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

@@ -11,7 +11,6 @@ public class PayMessages {
         this.pluginLogger = pluginLogger;
     }
 
-    // Success messages
     public void sendPaySuccessSender(Player messageReceiver, String amount, String target) {
         LogManager.Placeholder amountPlaceholder = new LogManager.Placeholder("amount", amount);
         LogManager.Placeholder targetPlaceholder = new LogManager.Placeholder("target", target);
@@ -26,7 +25,6 @@ public class PayMessages {
         pluginLogger.send(messageReceiver, "pay.success.receiver", amountPlaceholder, senderPlaceholder);
     }
 
-    // Error messages
     public void sendPayPlayerOnly() {
         pluginLogger.info("pay.error.player_only");
     }

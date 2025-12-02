@@ -2,6 +2,7 @@ package io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messa
 
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.LogManager;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.PluginLogger;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class SetBalanceMessages {
@@ -11,7 +12,7 @@ public class SetBalanceMessages {
         this.pluginLogger = pluginLogger;
     }
 
-    public void sendSetBalanceSuccessSender(Player messageReceiver, String targetName, String amount) {
+    public void sendSetBalanceSuccessSender(CommandSender messageReceiver, String targetName, String amount) {
         LogManager.Placeholder targetPlaceholder = new LogManager.Placeholder("target", targetName);
         LogManager.Placeholder amountPlaceholder = new LogManager.Placeholder("amount", amount);
 
@@ -25,39 +26,35 @@ public class SetBalanceMessages {
         pluginLogger.send(messageReceiver, "setbalance.success.receiver", amountPlaceholder, senderPlaceholder);
     }
 
-    public void sendSetBalanceNoPermission(Player messageReceiver) {
+    public void sendSetBalanceNoPermission(CommandSender messageReceiver) {
         pluginLogger.send(messageReceiver, "setbalance.error.no_permission");
     }
 
-    public void sendSetBalancePlayerOnly(Player messageReceiver) {
+    public void sendSetBalancePlayerOnly(CommandSender messageReceiver) {
         pluginLogger.send(messageReceiver, "setbalance.error.player_only");
     }
 
-    public void sendSetBalanceUsage(Player messageReceiver) {
+    public void sendSetBalanceUsage(CommandSender messageReceiver) {
         pluginLogger.send(messageReceiver, "setbalance.error.usage");
     }
 
-    public void sendSetBalancePlayerEmpty(Player messageReceiver) {
-        pluginLogger.send(messageReceiver, "setbalance.error.player_empty");
+    public void sendSetBalanceInvalidName(CommandSender messageReceiver) {
+        pluginLogger.send(messageReceiver, "setbalance.error.invalid_name");
     }
 
-    public void sendSetBalanceAmountEmpty(Player messageReceiver) {
-        pluginLogger.send(messageReceiver, "setbalance.error.amount_empty");
-    }
-
-    public void sendSetBalancePlayerNotFound(Player messageReceiver) {
+    public void sendSetBalancePlayerNotFound(CommandSender messageReceiver) {
         pluginLogger.send(messageReceiver, "setbalance.error.player_not_found");
     }
 
-    public void sendSetBalanceInvalidAmount(Player messageReceiver) {
+    public void sendSetBalanceInvalidAmount(CommandSender messageReceiver) {
         pluginLogger.send(messageReceiver, "setbalance.error.invalid_amount");
     }
 
-    public void sendSetBalanceUpdateFailed(Player messageReceiver) {
+    public void sendSetBalanceUpdateFailed(CommandSender messageReceiver) {
         pluginLogger.send(messageReceiver, "setbalance.error.update_failed");
     }
 
-    public void sendSetBalanceException(Player messageReceiver) {
+    public void sendSetBalanceException(CommandSender messageReceiver) {
         pluginLogger.send(messageReceiver, "setbalance.error.exception");
     }
 }

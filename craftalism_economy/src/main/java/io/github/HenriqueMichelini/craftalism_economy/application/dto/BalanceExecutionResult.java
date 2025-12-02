@@ -1,5 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.application.dto;
 
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.BalanceStatus;
+
 public record BalanceExecutionResult(
         BalanceStatus status,
         Long amount

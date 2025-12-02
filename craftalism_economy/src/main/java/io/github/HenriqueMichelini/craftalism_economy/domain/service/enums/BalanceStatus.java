@@ -1,11 +1,9 @@
 package io.github.HenriqueMichelini.craftalism_economy.domain.service.enums;
 
-public enum BalanceResult {
+public enum BalanceStatus {
     SUCCESS_SELF,
     SUCCESS_OTHER,
-    NOT_FOUND,
     NO_BALANCE,
-    USAGE,
-    ERROR,
-    PLAYER_ONLY
+    NOT_FOUND,
+    ERROR
 }

@@ -35,7 +35,7 @@ public final class CraftalismEconomy extends JavaPlugin {
     private BalanceMessages balanceMessages;
     private BaltopMessages baltopMessages;
 
-    private PlayerNameCheck playerNameCheck = new PlayerNameCheck();
+    private final PlayerNameCheck playerNameCheck = new PlayerNameCheck();
 
     private CurrencyFormatter currencyFormatter;
     private CurrencyParser currencyParser;
@@ -43,12 +43,12 @@ public final class CraftalismEconomy extends JavaPlugin {
     private ConnectionConfig connectionConfig;
     private String baseUrl;
 
-    private Gson gson = new Gson();
+    private final Gson gson = new Gson();
 
     private HttpClientService client;
 
-    private PlayerCacheRepository playerCacheRepository = new PlayerCacheRepository();
-    private BalanceCacheRepository balanceCacheRepository = new BalanceCacheRepository();
+    private final PlayerCacheRepository playerCacheRepository = new PlayerCacheRepository();
+    private final BalanceCacheRepository balanceCacheRepository = new BalanceCacheRepository();
 
     private PlayerApiService playerApiService;
     private BalanceApiService balanceApiService;

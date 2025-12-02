@@ -46,6 +46,19 @@ public class PlayerApplicationService {
                 });
     }
 
+    public CompletableFuture<Player> getPlayerByName(String name) {
+        return api.getPlayerByName(name)
+                .thenApply(dto -> {
+                    Player player = new Player(dto.uuid(), dto.name(), dto.createdAt());
+                    cache.save(player);
+                    return player;
+                });
+    }
+
+    public CompletableFuture<PlayerResponseDTO> getPlayerByUuid(UUID uuid) {
+        return api.getPlayerByUuid(uuid);
+    }
+
     public CompletableFuture<String> getNameByUuid(UUID uuid) {
         return api.getPlayerByUuid(uuid).thenApply(PlayerResponseDTO::name);
     }

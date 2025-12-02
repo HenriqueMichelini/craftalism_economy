@@ -50,6 +50,21 @@ public class BalanceApiService {
                 });
     }
 
+    public CompletableFuture<BalanceResponseDTO> updateBalance(UUID uuid, Long amount) {
+        BalanceResponseDTO dto = new BalanceResponseDTO(uuid, amount);
+        String body = gson.toJson(dto);
+
+        return http.put("/balances/" + uuid, body)
+                .thenCompose(resp -> {
+                    if (resp.statusCode() == 404) {
+                        return CompletableFuture.failedFuture(new NotFoundException());
+                    }
+                    return CompletableFuture.completedFuture(
+                            gson.fromJson(resp.body(), BalanceResponseDTO.class)
+                    );
+                });
+    }
+
     public CompletableFuture<Void> deposit(UUID uuid, long amount) {
         BalanceUpdateRequestDTO dto = new BalanceUpdateRequestDTO(amount);
 

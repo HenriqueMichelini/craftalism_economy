@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
         import static org.mockito.Mockito.*;
 
 @DisplayName("BaltopCommand Tests")
-class BaltopCommandTest {
+class  BaltopCommandTest {
 
     private BaltopMessages messages;
     private BaltopCommandApplicationService service;

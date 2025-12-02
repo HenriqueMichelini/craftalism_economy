@@ -11,7 +11,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class PayCommandApplicationService {
-
     private final PlayerApplicationService playerService;
     private final PlayerApiService playerApi;
     private final BalanceApiService balanceApi;

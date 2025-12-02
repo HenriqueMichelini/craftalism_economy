@@ -1,7 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.application.service;
 
 import io.github.HenriqueMichelini.craftalism_economy.application.dto.BalanceExecutionResult;
-import io.github.HenriqueMichelini.craftalism_economy.application.dto.BalanceStatus;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.BalanceStatus;
 import io.github.HenriqueMichelini.craftalism_economy.domain.model.Balance;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.exception.NotFoundException;
 import org.junit.jupiter.api.AfterEach;

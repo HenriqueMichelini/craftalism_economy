@@ -1,168 +1,78 @@
-//package io.github.HenriqueMichelini.craftalism_economy.presentation.commands;
-//
-//import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.currency.CurrencyFormatter;
-//import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.currency.CurrencyParser;
-//import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.SetBalanceMessages;
-//import io.github.HenriqueMichelini.craftalism_economy.domain.service.validators.PlayerValidator;
-//import net.kyori.adventure.text.Component;
-//import net.kyori.adventure.text.format.NamedTextColor;
-//import org.bukkit.OfflinePlayer;
-//import org.bukkit.command.Command;
-//import org.bukkit.command.CommandExecutor;
-//import org.bukkit.command.CommandSender;
-//import org.bukkit.entity.Player;
-//import org.bukkit.plugin.java.JavaPlugin;
-//import org.jetbrains.annotations.NotNull;
-//
-//import java.util.Optional;
-//
-//public class SetBalanceCommand implements CommandExecutor {
-//    private static final NamedTextColor ERROR_COLOR = NamedTextColor.RED;
-//    private static final NamedTextColor SUCCESS_COLOR = NamedTextColor.GREEN;
-//    private static final NamedTextColor VALUE_COLOR = NamedTextColor.WHITE;
-//    private static final String LOG_PREFIX = "[CE.SetBalance]";
-//
-//    private final BalanceManager balanceManager;
-//    private final JavaPlugin plugin;
-//    private final CurrencyFormatter currencyFormatter;
-//    private final PlayerValidator playerValidator;
-//    private final CurrencyParser currencyParser;
-//
-//    private final SetBalanceMessages messages;
-//
-//    public SetBalanceCommand(
-//            @NotNull BalanceManager balanceManager,
-//            @NotNull JavaPlugin plugin,
-//            @NotNull CurrencyFormatter currencyFormatter,
-//            @NotNull PlayerValidator playerValidator,
-//            @NotNull CurrencyParser currencyParser,
-//            @NotNull SetBalanceMessages messages
-//    ) {
-//
-//        this.balanceManager = balanceManager;
-//        this.plugin = plugin;
-//        this.currencyFormatter = currencyFormatter;
-//        this.playerValidator = playerValidator;
-//        this.currencyParser = currencyParser;
-//        this.messages = messages;
-//    }
-//
-//    @Override
-//    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String @NotNull [] args) {
-//        Player player = (Player) sender;
-//        try {
-//            if (!validateArguments(player, args)) {
-//                return true;
-//            }
-//
-//            String playerName = args[0];
-//            String amountString = args[1];
-//
-//            Optional<OfflinePlayer> targetOpt = resolveTargetPlayer(sender, playerName);
-//            if (targetOpt.isEmpty()) {
-//                return true;
-//            }
-//
-//            OfflinePlayer target = targetOpt.get();
-//
-//            Optional<Long> amountOpt = parseAmount(sender, amountString);
-//            if (amountOpt.isEmpty()) {
-//                return true;
-//            }
-//
-//            long amount = amountOpt.get();
-//
-//            return processBalanceUpdate(sender, target, amount);
-//
-//        } catch (Exception e) {
-//            plugin.getLogger().warning(LOG_PREFIX + " Error executing setbalance command: " + e.getMessage());
-//            messages.sendSetBalanceException(player);
-//            return true;
-//        }
-//    }
-//
-//    private boolean validateArguments(Player sender, String[] args) {
-//        if (args.length != 2) {
-//            messages.sendSetBalanceUsage(sender);
-//            return false;
-//        }
-//
-//        if (args[0] == null || args[0].trim().isEmpty()) {
-//            messages.sendSetBalancePlayerEmpty(sender);
-//            messages.sendSetBalanceUsage(sender);
-//            return false;
-//        }
-//
-//        if (args[1] == null || args[1].trim().isEmpty()) {
-//            messages.sendSetBalanceAmountEmpty(sender);
-//            messages.sendSetBalanceUsage(sender);
-//            return false;
-//        }
-//
-//        return true;
-//    }
-//
-//    //essa funçao faz coisas demais
-//    private Optional<OfflinePlayer> resolveTargetPlayer(CommandSender sender, String playerName) {
-//        if (sender instanceof Player player) {
-//            Optional<OfflinePlayer> playerOpt = playerValidator.resolvePlayer(player, playerName);
-//            if (playerOpt.isEmpty()) {
-//                messages.sendSetBalancePlayerNotFound(player);
-//            }
-//            return playerOpt;
-//        } else {
-//            sender.sendMessage(errorComponent("This command currently requires execution by a player."));
-//            messages.send
-//            return Optional.empty();
-//        }
-//    }
-//
-//    private Optional<Long> parseAmount(CommandSender sender, String amountString) {
-//        if (sender instanceof Player player) {
-//            return currencyParser.parseAmount(player, amountString);
-//        } else {
-//            Optional<Long> amountOpt = currencyParser.parseAmountSilently(amountString);
-//            if (amountOpt.isEmpty()) {
-//                sender.sendMessage(errorComponent("Invalid amount format. Use numbers only (e.g., 1.23)."));
-//            }
-//            return amountOpt;
-//        }
-//    }
-//
-//    private boolean processBalanceUpdate(CommandSender sender, OfflinePlayer target, long amount) {
-//        try {
-//            balanceManager.setBalance(target.getUniqueId(), amount);
-//            sendConfirmationMessages(sender, target, amount);
-//            logTransaction(sender, target, amount);
-//            return true;
-//        } catch (Exception e) {
-//            plugin.getLogger().severe(LOG_PREFIX + " Failed to update balance for " +
-//                    target.getName() + ": " + e.getMessage());
-//            sender.sendMessage(errorComponent("Error updating balance. Check logs for details."));
-//            return false;
-//        }
-//    }
-//
-//    private void sendConfirmationMessages(CommandSender sender, OfflinePlayer target, long amount) {
-//        String formattedAmount = currencyFormatter.formatCurrency(amount);
-//        String targetName = getPlayerName(target);
-//
-//        Component senderMessage = buildAlternatingColorMessage(
-//                "Set ", targetName, "'s balance to ", formattedAmount
-//        );
-//        sender.sendMessage(senderMessage);
-//
-//        if (target instanceof Player onlineTarget) {
-//            Component targetMessage = buildAlternatingColorMessage(
-//                    "Your balance has been set to ", formattedAmount, " by ", sender.getName()
-//            );
-//            onlineTarget.sendMessage(targetMessage);
-//        }
-//    }
-//
-//    //novamente, isso deveria estar em outro lugar, to pensando ainda
-//    private String getPlayerName(OfflinePlayer player) {
-//        String name = player.getName();
-//        return (name != null && !name.isEmpty()) ? name : "Unknown Player";
-//    }
-//}
+package io.github.HenriqueMichelini.craftalism_economy.presentation.commands;
+
+import io.github.HenriqueMichelini.craftalism_economy.application.service.SetBalanceCommandApplicationService;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.SetBalanceMessages;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.validation.PlayerNameCheck;
+import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
+
+public class SetBalanceCommand implements CommandExecutor {
+
+    private final PlayerNameCheck playerNameCheck;
+    private final SetBalanceMessages messages;
+    private final SetBalanceCommandApplicationService service;
+    private final JavaPlugin plugin;
+
+    public SetBalanceCommand(
+            PlayerNameCheck playerNameCheck,
+            SetBalanceMessages messages,
+            SetBalanceCommandApplicationService service,
+            JavaPlugin plugin
+    ) {
+        this.playerNameCheck = playerNameCheck;
+        this.messages = messages;
+        this.service = service;
+        this.plugin = plugin;
+    }
+
+    @Override
+    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+        if (args.length != 2) {
+            messages.sendSetBalanceUsage(sender);
+            return true;
+        }
+
+        String senderName = (sender instanceof Player p) ? p.getName() : "Console";
+        String targetName = args[0];
+
+        if (!playerNameCheck.isValid(targetName)) {
+            messages.sendSetBalanceInvalidName(sender);
+            return true;
+        }
+
+        Long amount;
+
+        try {
+            amount = Long.parseLong(args[1]);
+        } catch (NumberFormatException e) {
+            messages.sendSetBalanceInvalidAmount(sender);
+            return true;
+        }
+
+        service.execute(targetName, amount)
+                .thenAccept(result ->
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            switch (result.status()) {
+                                case SUCCESS -> {
+                                    if (result.uuid().isPresent()) {
+                                        Player target = Bukkit.getPlayer(result.uuid().get());
+                                        messages.sendSetBalanceSuccessReceiver(target, String.valueOf(amount), senderName);
+                                    }
+                                    messages.sendSetBalanceSuccessSender(sender, targetName, String.valueOf(amount));
+                                }
+                                case INVALID_AMOUNT -> messages.sendSetBalanceInvalidAmount(sender);
+                                case PLAYER_NOT_FOUND -> messages.sendSetBalancePlayerNotFound(sender);
+                                case UPDATE_FAILED -> messages.sendSetBalanceUpdateFailed(sender);
+                                default -> messages.sendSetBalanceException(sender);
+                            }
+                        })
+                );
+
+        return true;
+    }
+}
