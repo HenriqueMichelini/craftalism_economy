@@ -28,7 +28,6 @@ public class SetBalanceCommandApplicationService {
             return CompletableFuture.completedFuture(SetBalanceExecutionResult.invalidAmount());
         }
 
-        // Flow: Get player UUID -> Set balance -> Return result
         return getPlayerUuid(targetName)
                 .thenCompose(uuid -> setBalanceForPlayer(uuid, amount))
                 .exceptionally(this::handleException);
