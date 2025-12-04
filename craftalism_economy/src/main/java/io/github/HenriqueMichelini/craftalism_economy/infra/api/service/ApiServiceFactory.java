@@ -14,25 +14,25 @@ public final class ApiServiceFactory {
     private BalanceApiService balanceApiService;
     private TransactionApiService transactionApiService;
 
-    ApiServiceFactory(ConfigLoader cfg) { this.cfg = cfg; }
+    public ApiServiceFactory(ConfigLoader cfg) { this.cfg = cfg; }
 
     private synchronized void ensureHttpClient() {
         if (httpClient == null) httpClient = new HttpClientService(cfg.baseUrl());
     }
 
-    public PlayerApiService playerApi() {
+    public PlayerApiService getPlayerApi() {
         ensureHttpClient();
         if (playerApiService == null) playerApiService = new PlayerApiService(httpClient, gson);
         return playerApiService;
     }
 
-    public BalanceApiService balanceApi() {
+    public BalanceApiService getBalanceApi() {
         ensureHttpClient();
         if (balanceApiService == null) balanceApiService = new BalanceApiService(httpClient);
         return balanceApiService;
     }
 
-    public TransactionApiService transactionApi() {
+    public TransactionApiService getTransactionApi() {
         ensureHttpClient();
         if (transactionApiService == null) transactionApiService = new TransactionApiService(httpClient);
         return transactionApiService;

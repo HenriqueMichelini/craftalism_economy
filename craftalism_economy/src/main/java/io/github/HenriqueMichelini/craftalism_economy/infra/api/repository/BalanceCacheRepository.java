@@ -6,7 +6,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BalanceCacheRepository {
-    private final Map<UUID, Balance> cache = new ConcurrentHashMap<UUID, Balance>();
+    private final Map<UUID, Balance> cache = new ConcurrentHashMap<>();
 
     public Optional<Balance> find(UUID uuid) {
         return Optional.ofNullable(cache.get(uuid));
@@ -18,5 +18,9 @@ public class BalanceCacheRepository {
 
     public void delete(UUID uuid) {
         cache.remove(uuid);
+    }
+
+    public void clear() {
+        cache.clear();
     }
 }

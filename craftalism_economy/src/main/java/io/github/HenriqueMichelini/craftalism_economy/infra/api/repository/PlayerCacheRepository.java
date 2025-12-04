@@ -19,4 +19,8 @@ public class PlayerCacheRepository {
     public void delete(UUID uuid) {
         cache.remove(uuid);
     }
+
+    public void clear() {
+        cache.clear();
+    }
 }

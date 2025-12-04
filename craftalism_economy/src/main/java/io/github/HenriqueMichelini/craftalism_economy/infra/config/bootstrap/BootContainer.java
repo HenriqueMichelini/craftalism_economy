@@ -1,43 +1,94 @@
 package io.github.HenriqueMichelini.craftalism_economy.infra.config.bootstrap;
 
 import io.github.HenriqueMichelini.craftalism_economy.CraftalismEconomy;
+import io.github.HenriqueMichelini.craftalism_economy.application.service.*;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.CurrencyFormatter;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.CurrencyParser;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.FormatterFactory;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.LogManager;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.PluginLogger;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.ApiServiceFactory;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.BalanceApiService;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.PlayerApiService;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.TransactionApiService;
+import io.github.HenriqueMichelini.craftalism_economy.infra.config.ConfigLoader;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.CommandRegistrar;
+import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Objects;
-
-final class BootContainer {
+public final class BootContainer {
     private final CraftalismEconomy plugin;
+    private final JavaPlugin javaPlugin;
 
+    private LogManager logManager;
+    private PluginLogger pluginLogger;
 
-    // factories / services
-    private final ConfigLoader configLoader;
-    private final FormatterFactory formatterFactory;
-    private final ApiServiceFactory apiServiceFactory;
-    private final ApplicationServiceFactory applicationServiceFactory;
-    private final CommandRegistrar commandRegistrar;
+    private CurrencyFormatter currencyFormatter;
+    private CurrencyParser currencyParser;
 
+    private BalanceApiService balanceApiService;
+    private PlayerApiService playerApiService;
+    private TransactionApiService transactionApiService;
 
-    BootContainer(CraftalismEconomy plugin) {
-        this.plugin = Objects.requireNonNull(plugin, "plugin");
-        this.configLoader = new ConfigLoader(plugin);
-        this.formatterFactory = new FormatterFactory(configLoader, plugin);
-        this.apiServiceFactory = new ApiServiceFactory(configLoader);
-        this.applicationServiceFactory = new ApplicationServiceFactory(apiServiceFactory);
-        this.commandRegistrar = new CommandRegistrar(plugin, applicationServiceFactory, formatterFactory);
+    private PlayerApplicationService playerApplicationService;
+    private PayCommandApplicationService payCommandApplicationService;
+    private BalanceApplicationService balanceApplicationService;
+    private BalanceCommandApplicationService balanceCommandApplicationService;
+    private BaltopCommandApplicationService baltopCommandApplicationService;
+    private SetBalanceCommandApplicationService setBalanceCommandApplicationService;
+
+    public BootContainer(CraftalismEconomy plugin, JavaPlugin javaPlugin) {
+        this.plugin = plugin;
+        this.javaPlugin = javaPlugin;
     }
 
+    public void initialize() {
+        // 1. Load configuration
+        ConfigLoader configLoader = new ConfigLoader(plugin);
 
-    void initialize() {
-// Perform any initialization steps that may be required in the future
-// e.g. start health checks, metrics, schedule tasks
+        // 2. Logging
+        this.logManager = new LogManager(plugin);
+        this.pluginLogger = new PluginLogger(plugin, logManager);
+
+        // 3. Formatters
+        FormatterFactory formatterFactory = new FormatterFactory(
+                configLoader,
+                plugin,
+                pluginLogger
+        );
+
+        this.currencyFormatter = formatterFactory.getFormatter();
+        this.currencyParser = formatterFactory.getParser();
+
+        // 4. API services
+        ApiServiceFactory apiFactory = new ApiServiceFactory(configLoader);
+
+        this.playerApiService = apiFactory.getPlayerApi();
+        this.balanceApiService = apiFactory.getBalanceApi();
+        this.transactionApiService = apiFactory.getTransactionApi();
+
+        // 5. Application Services
+        ApplicationServiceFactory appFactory = new ApplicationServiceFactory(apiFactory);
+
+        this.playerApplicationService = appFactory.getPlayerApplication();
+        this.payCommandApplicationService = appFactory.getPayCommandApplication();
+        this.balanceApplicationService = appFactory.getBalanceApplication();
+        this.balanceCommandApplicationService = appFactory.getBalanceCommandApplication();
+        this.baltopCommandApplicationService = appFactory.getBaltopCommandApplication();
+        this.setBalanceCommandApplicationService = appFactory.setBalanceCommandApplication();
+
+        // 6. Command registration
+        new CommandRegistrar(
+                plugin,
+                appFactory,
+                formatterFactory
+        ).registerAll();
     }
 
-
-    void shutdown() {
-// Flush caches, persist state, stop schedulers, etc
-        applicationServiceFactory.shutdown();
+    public void shutdown() {
+        // flush caches, send pending balances, etc
     }
 
-
-    FormatterFactory getFormatterFactory() { return formatterFactory; }
-    CommandRegistrar getCommandRegistrar() { return commandRegistrar; }
+    public CurrencyFormatter getCurrencyFormatter() { return currencyFormatter; }
+    public CurrencyParser getCurrencyParser() { return currencyParser; }
+    public PluginLogger getPluginLogger() { return pluginLogger; }
 }
