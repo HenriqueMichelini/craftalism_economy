@@ -96,15 +96,29 @@ public class PayCommandApplicationService {
         return performTransfer(payerUuid, receiverUuid, amount);
     }
 
-    private CompletableFuture<PayResult> performTransfer(
-            UUID payerUuid,
-            UUID receiverUuid,
-            long amount
-    ) {
+    private CompletableFuture<PayResult> performTransfer(UUID payerUuid, UUID receiverUuid, long amount) {
         return balanceApi.withdraw(payerUuid, amount)
-                .thenCompose(v -> balanceApi.deposit(receiverUuid, amount))
-                .thenCompose(v -> transactionApi.register(payerUuid, receiverUuid, amount))
-                .thenApply(v -> PayResult.SUCCESS);
+                .thenCompose(withdrawResult ->
+                        balanceApi.deposit(receiverUuid, amount)
+                                .exceptionallyCompose(depositEx -> {
+                                    // Rollback: refund the withdrawn amount
+                                    //plugin.getLogger().severe("Deposit failed, rolling back withdrawal for " + payerUuid);
+                                    return balanceApi.deposit(payerUuid, amount)
+                                            .thenCompose(v -> CompletableFuture.failedFuture(depositEx));
+                                })
+                )
+                .thenCompose(depositResult ->
+                        transactionApi.register(payerUuid, receiverUuid, amount)
+                                .exceptionally(ex -> {
+                                    //plugin.getLogger().warning("Transaction logging failed (payment completed): " + ex.getMessage());
+                                    return null; // Payment succeeded even if logging failed
+                                })
+                )
+                .thenApply(v -> PayResult.SUCCESS)
+                .exceptionally(ex -> {
+                    //plugin.getLogger().severe("Payment failed: " + ex.getMessage());
+                    return PayResult.ERROR;
+                });
     }
 
     private PayResult handleException(Throwable ex) {
