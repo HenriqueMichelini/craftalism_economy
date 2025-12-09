@@ -1,4 +1,4 @@
-package io.github.HenriqueMichelini.craftalism_economy.infra.api.exception;
+package io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions;
 
 public class ApiTimeoutException extends RuntimeException {
 

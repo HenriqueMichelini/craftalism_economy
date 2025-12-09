@@ -1,11 +1,16 @@
-package io.github.HenriqueMichelini.craftalism_economy.infra.api.exception;
+package io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions;
 
-public class NotFoundException extends RuntimeException {
+public class NotFoundException extends ClientException {
     public NotFoundException() {
         super();
     }
 
     public NotFoundException(String message) {
         super(message);
+    }
+
+    @Override
+    public synchronized Throwable fillInStackTrace() {
+        return this;
     }
 }
