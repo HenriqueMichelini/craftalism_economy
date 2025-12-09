@@ -9,11 +9,12 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
+
 import static org.mockito.Mockito.when;
 
 @DisplayName("CurrencyFormatter Tests")
@@ -44,9 +45,6 @@ class CurrencyFormatterTest {
 
     @AfterEach
     void tearDown() throws Exception {
-        if (formatter != null) {
-            formatter.cleanup();
-        }
         mocks.close();
     }
 
@@ -226,8 +224,6 @@ class CurrencyFormatterTest {
 
         String result = euroFormatter.formatCurrency(1000000L);
         assertTrue(result.startsWith("€"));
-
-        euroFormatter.cleanup();
     }
 
     @Test
@@ -238,8 +234,6 @@ class CurrencyFormatterTest {
 
         String result = germanyFormatter.formatCurrency(10000000000L);
         assertTrue(result.contains(".") || result.contains(","));
-
-        germanyFormatter.cleanup();
     }
 
     @Test
@@ -287,16 +281,70 @@ class CurrencyFormatterTest {
     }
 
     @Test
-    @DisplayName("Should cleanup ThreadLocal resources")
-    void shouldCleanupThreadLocalResources() {
-        formatter.formatCurrency(1000000L);
-        assertDoesNotThrow(() -> formatter.cleanup());
-    }
-
-    @Test
     @DisplayName("Should have correct decimal scale constant")
     void shouldHaveCorrectDecimalScaleConstant() {
         assertEquals(10000L, CurrencyFormatter.DECIMAL_SCALE);
         assertEquals(0, new BigDecimal("10000").compareTo(CurrencyFormatter.DECIMAL_SCALE_BD));
+    }
+
+    @Test
+    @DisplayName("Fallback-built formatter should use correct locale formatting")
+    void fallbackShouldUseCorrectLocale() {
+        CurrencyFormatter germany = new CurrencyFormatter(
+                Locale.GERMANY, "€", "ERROR", mockPlugin,
+                (prototype, loc) -> {
+                    NumberFormat nf = NumberFormat.getInstance(loc);
+                    nf.setMinimumFractionDigits(prototype.getMinimumFractionDigits());
+                    nf.setMaximumFractionDigits(prototype.getMaximumFractionDigits());
+                    nf.setGroupingUsed(prototype.isGroupingUsed());
+                    try {
+                        nf.setRoundingMode(java.math.RoundingMode.HALF_UP);
+                    } catch (ClassCastException ignored) {}
+                    return nf;
+                }
+        );
+
+        String result = germany.formatCurrency(1234500L);
+
+        assertTrue(result.startsWith("€"), "Should start with currency symbol");
+        assertTrue(result.contains(","), "German locale should use comma as decimal separator");
+    }
+
+    @Test
+    @DisplayName("Should rebuild formatter if cloning fails")
+    void shouldRebuildFormatterOnCloneFailure() {
+        CurrencyFormatter broken = new CurrencyFormatter(
+                Locale.US, "$", "ERROR", mockPlugin,
+                (prototype, loc) -> {
+                    NumberFormat nf = NumberFormat.getInstance(loc);
+                    nf.setMinimumFractionDigits(prototype.getMinimumFractionDigits());
+                    nf.setMaximumFractionDigits(prototype.getMaximumFractionDigits());
+                    nf.setGroupingUsed(prototype.isGroupingUsed());
+                    try {
+                        nf.setRoundingMode(java.math.RoundingMode.HALF_UP);
+                    } catch (ClassCastException ignored) {}
+                    return nf;
+                }
+        );
+
+        String result = broken.formatCurrency(1000000L);
+
+        assertEquals("$100.00", result);
+    }
+
+    @Test
+    @DisplayName("Prototype NumberFormat must remain unmodified after formatting")
+    void prototypeShouldRemainUnmodified() {
+        int minBefore = formatter.prototype.getMinimumFractionDigits();
+        int maxBefore = formatter.prototype.getMaximumFractionDigits();
+        boolean groupingBefore = formatter.prototype.isGroupingUsed();
+
+        for (int i = 0; i < 100; i++) {
+            formatter.formatCurrency(12345L);
+        }
+
+        assertEquals(minBefore, formatter.prototype.getMinimumFractionDigits());
+        assertEquals(maxBefore, formatter.prototype.getMaximumFractionDigits());
+        assertEquals(groupingBefore, formatter.prototype.isGroupingUsed());
     }
 }
