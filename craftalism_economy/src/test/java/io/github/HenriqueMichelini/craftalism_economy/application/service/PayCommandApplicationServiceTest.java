@@ -4,9 +4,12 @@ import io.github.HenriqueMichelini.craftalism_economy.domain.model.Player;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.PayResult;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.BalanceResponseDTO;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.PlayerResponseDTO;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.TransactionResponseDTO;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.exception.NotFoundException;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.BalanceApiService;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.PlayerApiService;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.TransactionApiService;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,9 +23,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
-@DisplayName("PayApplicationService Tests")
+@DisplayName("PayCommandApplicationService Tests")
 class PayCommandApplicationServiceTest {
 
     @Mock
@@ -33,28 +38,43 @@ class PayCommandApplicationServiceTest {
     private BalanceApiService balanceApi;
     @Mock
     private TransactionApiService transactionApi;
+    @Mock
+    private JavaPlugin plugin;
+    @Mock
+    private java.util.logging.Logger logger;
+
     private PayCommandApplicationService service;
 
     private UUID payerUuid;
     private UUID receiverUuid;
     private String payerName;
     private String receiverName;
+    private Long validAmount;
     private Player payerPlayer;
     private PlayerResponseDTO receiverDTO;
-    private Long validAmount;
 
     private AutoCloseable mocks;
 
     @BeforeEach
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
-        service = new PayCommandApplicationService(playerService, playerApi, balanceApi, transactionApi);
+
+        // Mock the logger to prevent NullPointerException
+        when(plugin.getLogger()).thenReturn(logger);
+
+        service = new PayCommandApplicationService(
+                playerService,
+                playerApi,
+                balanceApi,
+                transactionApi,
+                plugin
+        );
 
         payerUuid = UUID.randomUUID();
         receiverUuid = UUID.randomUUID();
         payerName = "Payer";
         receiverName = "Receiver";
-        validAmount = 100_0000L;
+        validAmount = 100_0000L; // $100.00
 
         payerPlayer = new Player(payerUuid, payerName, Instant.now());
         receiverDTO = new PlayerResponseDTO(receiverUuid, receiverName, Instant.now());
@@ -82,7 +102,9 @@ class PayCommandApplicationServiceTest {
         when(balanceApi.deposit(receiverUuid, validAmount))
                 .thenReturn(CompletableFuture.completedFuture(null));
         when(transactionApi.register(payerUuid, receiverUuid, validAmount))
-                .thenReturn(CompletableFuture.completedFuture(null));
+                .thenReturn(CompletableFuture.completedFuture(
+                        new TransactionResponseDTO(1L, payerUuid, receiverUuid, validAmount, Instant.now())
+                ));
 
         PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
@@ -113,7 +135,9 @@ class PayCommandApplicationServiceTest {
         when(balanceApi.deposit(receiverUuid, exactAmount))
                 .thenReturn(CompletableFuture.completedFuture(null));
         when(transactionApi.register(payerUuid, receiverUuid, exactAmount))
-                .thenReturn(CompletableFuture.completedFuture(null));
+                .thenReturn(CompletableFuture.completedFuture(
+                        new TransactionResponseDTO(1L, payerUuid, receiverUuid, exactAmount, Instant.now())
+                ));
 
         PayResult result = service.execute(payerUuid, payerName, receiverName, exactAmount).get();
 
@@ -172,12 +196,12 @@ class PayCommandApplicationServiceTest {
     }
 
     @Test
-    @DisplayName("Should reject payment when target player not found")
-    void shouldRejectPaymentWhenTargetNotFound() throws ExecutionException, InterruptedException {
+    @DisplayName("Should return TARGET_NOT_FOUND when receiver not found (NotFoundException)")
+    void shouldReturnTargetNotFoundWhenReceiverNotFound() throws ExecutionException, InterruptedException {
         when(playerService.getCachedOrFetch(payerUuid, payerName))
                 .thenReturn(CompletableFuture.completedFuture(payerPlayer));
         when(playerApi.getPlayerByName(receiverName))
-                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Player not found")));
+                .thenReturn(CompletableFuture.failedFuture(new NotFoundException("Player not found")));
 
         PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
@@ -189,11 +213,27 @@ class PayCommandApplicationServiceTest {
     }
 
     @Test
+    @DisplayName("Should return ERROR when receiver lookup fails with non-NotFoundException")
+    void shouldReturnErrorWhenReceiverLookupFails() throws ExecutionException, InterruptedException {
+        when(playerService.getCachedOrFetch(payerUuid, payerName))
+                .thenReturn(CompletableFuture.completedFuture(payerPlayer));
+        when(playerApi.getPlayerByName(receiverName))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("API Error")));
+
+        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+
+        assertEquals(PayResult.ERROR, result);
+
+        verify(playerService).getCachedOrFetch(payerUuid, payerName);
+        verify(playerApi).getPlayerByName(receiverName);
+        verify(balanceApi, never()).getBalance(any());
+    }
+
+    @Test
     @DisplayName("Should reject payment when payer has insufficient funds")
     void shouldRejectPaymentWhenInsufficientFunds() throws ExecutionException, InterruptedException {
-        Long insufficientBalance = 50_0000L; // $50.00, but trying to pay $100.00
+        Long insufficientBalance = 50_0000L;
         BalanceResponseDTO dto = new BalanceResponseDTO(payerUuid, insufficientBalance);
-
 
         when(playerService.getCachedOrFetch(payerUuid, payerName))
                 .thenReturn(CompletableFuture.completedFuture(payerPlayer));
@@ -218,7 +258,6 @@ class PayCommandApplicationServiceTest {
         Long almostEnough = validAmount - 1;
         BalanceResponseDTO dto = new BalanceResponseDTO(payerUuid, almostEnough);
 
-
         when(playerService.getCachedOrFetch(payerUuid, payerName))
                 .thenReturn(CompletableFuture.completedFuture(payerPlayer));
         when(playerApi.getPlayerByName(receiverName))
@@ -232,10 +271,10 @@ class PayCommandApplicationServiceTest {
     }
 
     @Test
-    @DisplayName("Should handle exception when getting payer")
-    void shouldHandleExceptionWhenGettingPayer() throws ExecutionException, InterruptedException {
+    @DisplayName("Should return TARGET_NOT_FOUND when getting payer fails with NotFoundException")
+    void shouldReturnTargetNotFoundWhenGettingPayerFails() throws ExecutionException, InterruptedException {
         when(playerService.getCachedOrFetch(payerUuid, payerName))
-                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Database error")));
+                .thenReturn(CompletableFuture.failedFuture(new NotFoundException("Payer not found")));
 
         PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
@@ -246,8 +285,22 @@ class PayCommandApplicationServiceTest {
     }
 
     @Test
-    @DisplayName("Should handle exception during balance check")
-    void shouldHandleExceptionDuringBalanceCheck() throws ExecutionException, InterruptedException {
+    @DisplayName("Should return ERROR when getting payer fails with non-NotFoundException")
+    void shouldReturnErrorWhenGettingPayerFailsWithOtherException() throws ExecutionException, InterruptedException {
+        when(playerService.getCachedOrFetch(payerUuid, payerName))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Database error")));
+
+        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+
+        assertEquals(PayResult.ERROR, result);
+
+        verify(playerApi, never()).getPlayerByName(any());
+        verify(balanceApi, never()).getBalance(any());
+    }
+
+    @Test
+    @DisplayName("Should return ERROR when balance check fails")
+    void shouldReturnErrorDuringBalanceCheck() throws ExecutionException, InterruptedException {
         when(playerService.getCachedOrFetch(payerUuid, payerName))
                 .thenReturn(CompletableFuture.completedFuture(payerPlayer));
         when(playerApi.getPlayerByName(receiverName))
@@ -257,17 +310,16 @@ class PayCommandApplicationServiceTest {
 
         PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.TARGET_NOT_FOUND, result);
+        assertEquals(PayResult.ERROR, result);
 
         verify(balanceApi, never()).withdraw(any(), anyLong());
     }
 
     @Test
-    @DisplayName("Should handle exception during withdraw")
-    void shouldHandleExceptionDuringWithdraw() throws ExecutionException, InterruptedException {
+    @DisplayName("Should return ERROR when withdraw fails")
+    void shouldReturnErrorDuringWithdraw() throws ExecutionException, InterruptedException {
         Long payerBalance = 500_0000L;
         BalanceResponseDTO dto = new BalanceResponseDTO(payerUuid, payerBalance);
-
 
         when(playerService.getCachedOrFetch(payerUuid, payerName))
                 .thenReturn(CompletableFuture.completedFuture(payerPlayer));
@@ -280,19 +332,18 @@ class PayCommandApplicationServiceTest {
 
         PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.TARGET_NOT_FOUND, result);
+        assertEquals(PayResult.ERROR, result);
 
         verify(balanceApi).withdraw(payerUuid, validAmount);
-        verify(balanceApi, never()).deposit(any(), anyLong());
+        verify(balanceApi, never()).deposit(receiverUuid, validAmount);
         verify(transactionApi, never()).register(any(), any(), anyLong());
     }
 
     @Test
-    @DisplayName("Should handle exception during deposit")
-    void shouldHandleExceptionDuringDeposit() throws ExecutionException, InterruptedException {
+    @DisplayName("Should return ERROR when deposit fails and rollback succeeds")
+    void shouldReturnErrorWhenDepositFailsAndRollbackSucceeds() throws ExecutionException, InterruptedException {
         Long payerBalance = 500_0000L;
         BalanceResponseDTO dto = new BalanceResponseDTO(payerUuid, payerBalance);
-
 
         when(playerService.getCachedOrFetch(payerUuid, payerName))
                 .thenReturn(CompletableFuture.completedFuture(payerPlayer));
@@ -304,22 +355,25 @@ class PayCommandApplicationServiceTest {
                 .thenReturn(CompletableFuture.completedFuture(null));
         when(balanceApi.deposit(receiverUuid, validAmount))
                 .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Deposit failed")));
+        // Rollback succeeds
+        when(balanceApi.deposit(payerUuid, validAmount))
+                .thenReturn(CompletableFuture.completedFuture(null));
 
         PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.TARGET_NOT_FOUND, result);
+        assertEquals(PayResult.ERROR, result);
 
         verify(balanceApi).withdraw(payerUuid, validAmount);
         verify(balanceApi).deposit(receiverUuid, validAmount);
+        verify(balanceApi).deposit(payerUuid, validAmount); // Rollback
         verify(transactionApi, never()).register(any(), any(), anyLong());
     }
 
     @Test
-    @DisplayName("Should handle exception during transaction registration")
-    void shouldHandleExceptionDuringTransactionRegistration() throws ExecutionException, InterruptedException {
+    @DisplayName("Should return SUCCESS even when transaction registration fails")
+    void shouldReturnSuccessWhenTransactionRegistrationFails() throws ExecutionException, InterruptedException {
         Long payerBalance = 500_0000L;
         BalanceResponseDTO dto = new BalanceResponseDTO(payerUuid, payerBalance);
-
 
         when(playerService.getCachedOrFetch(payerUuid, payerName))
                 .thenReturn(CompletableFuture.completedFuture(payerPlayer));
@@ -336,18 +390,48 @@ class PayCommandApplicationServiceTest {
 
         PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.TARGET_NOT_FOUND, result);
+        // Payment succeeded even though logging failed
+        assertEquals(PayResult.SUCCESS, result);
 
         verify(transactionApi).register(payerUuid, receiverUuid, validAmount);
     }
 
     @Test
+    @DisplayName("Should return ERROR when both deposit and rollback fail")
+    void shouldReturnErrorWhenBothDepositAndRollbackFail() throws ExecutionException, InterruptedException {
+        Long payerBalance = 500_0000L;
+        BalanceResponseDTO dto = new BalanceResponseDTO(payerUuid, payerBalance);
+
+        when(playerService.getCachedOrFetch(payerUuid, payerName))
+                .thenReturn(CompletableFuture.completedFuture(payerPlayer));
+        when(playerApi.getPlayerByName(receiverName))
+                .thenReturn(CompletableFuture.completedFuture(receiverDTO));
+        when(balanceApi.getBalance(payerUuid))
+                .thenReturn(CompletableFuture.completedFuture(dto));
+        when(balanceApi.withdraw(payerUuid, validAmount))
+                .thenReturn(CompletableFuture.completedFuture(null));
+        when(balanceApi.deposit(receiverUuid, validAmount))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Deposit failed")));
+        // Rollback also fails!
+        when(balanceApi.deposit(payerUuid, validAmount))
+                .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Rollback failed")));
+
+        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+
+        assertEquals(PayResult.ERROR, result);
+
+        verify(balanceApi).withdraw(payerUuid, validAmount);
+        verify(balanceApi).deposit(receiverUuid, validAmount);
+        verify(balanceApi).deposit(payerUuid, validAmount); // Attempted rollback
+        verify(transactionApi, never()).register(any(), any(), anyLong());
+    }
+
+    @Test
     @DisplayName("Should handle payment with very large valid amount")
     void shouldHandlePaymentWithVeryLargeAmount() throws ExecutionException, InterruptedException {
-        Long largeAmount = 1_000_000_0000L; // $1,000,000.00
+        Long largeAmount = 1_000_000_0000L;
         Long largerBalance = 2_000_000_0000L;
         BalanceResponseDTO dto = new BalanceResponseDTO(payerUuid, largerBalance);
-
 
         when(playerService.getCachedOrFetch(payerUuid, payerName))
                 .thenReturn(CompletableFuture.completedFuture(payerPlayer));
@@ -360,7 +444,9 @@ class PayCommandApplicationServiceTest {
         when(balanceApi.deposit(receiverUuid, largeAmount))
                 .thenReturn(CompletableFuture.completedFuture(null));
         when(transactionApi.register(payerUuid, receiverUuid, largeAmount))
-                .thenReturn(CompletableFuture.completedFuture(null));
+                .thenReturn(CompletableFuture.completedFuture(
+                        new TransactionResponseDTO(1L, payerUuid, receiverUuid, largeAmount, Instant.now())
+                ));
 
         PayResult result = service.execute(payerUuid, payerName, receiverName, largeAmount).get();
 
@@ -370,10 +456,9 @@ class PayCommandApplicationServiceTest {
     @Test
     @DisplayName("Should handle payment with minimum positive amount")
     void shouldHandlePaymentWithMinimumAmount() throws ExecutionException, InterruptedException {
-        Long minAmount = 1L; // 0.0001 in currency
+        Long minAmount = 1L;
         Long balance = 100_0000L;
         BalanceResponseDTO dto = new BalanceResponseDTO(payerUuid, balance);
-
 
         when(playerService.getCachedOrFetch(payerUuid, payerName))
                 .thenReturn(CompletableFuture.completedFuture(payerPlayer));
@@ -386,7 +471,9 @@ class PayCommandApplicationServiceTest {
         when(balanceApi.deposit(receiverUuid, minAmount))
                 .thenReturn(CompletableFuture.completedFuture(null));
         when(transactionApi.register(payerUuid, receiverUuid, minAmount))
-                .thenReturn(CompletableFuture.completedFuture(null));
+                .thenReturn(CompletableFuture.completedFuture(
+                        new TransactionResponseDTO(1L, payerUuid, receiverUuid, minAmount, Instant.now())
+                ));
 
         PayResult result = service.execute(payerUuid, payerName, receiverName, minAmount).get();
 
@@ -397,7 +484,6 @@ class PayCommandApplicationServiceTest {
     @DisplayName("Should handle payment when payer balance is zero")
     void shouldHandlePaymentWhenPayerBalanceIsZero() throws ExecutionException, InterruptedException {
         BalanceResponseDTO dto = new BalanceResponseDTO(payerUuid, 0L);
-
 
         when(playerService.getCachedOrFetch(payerUuid, payerName))
                 .thenReturn(CompletableFuture.completedFuture(payerPlayer));
@@ -418,7 +504,6 @@ class PayCommandApplicationServiceTest {
         UUID specialUuid = UUID.randomUUID();
         PlayerResponseDTO specialDTO = new PlayerResponseDTO(specialUuid, specialName, Instant.now());
         Long balance = 500_0000L;
-
         BalanceResponseDTO dto = new BalanceResponseDTO(payerUuid, balance);
 
         when(playerService.getCachedOrFetch(payerUuid, payerName))
@@ -432,7 +517,9 @@ class PayCommandApplicationServiceTest {
         when(balanceApi.deposit(specialUuid, validAmount))
                 .thenReturn(CompletableFuture.completedFuture(null));
         when(transactionApi.register(payerUuid, specialUuid, validAmount))
-                .thenReturn(CompletableFuture.completedFuture(null));
+                .thenReturn(CompletableFuture.completedFuture(
+                        new TransactionResponseDTO(1L, payerUuid, specialUuid, validAmount, Instant.now())
+                ));
 
         PayResult result = service.execute(payerUuid, payerName, specialName, validAmount).get();
 

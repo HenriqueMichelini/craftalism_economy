@@ -53,20 +53,16 @@ class ApiServiceFactoryTest {
             BalanceApiService b = factory.getBalanceApi();
             TransactionApiService t = factory.getTransactionApi();
 
-            // Only one HttpClientService should be constructed
             assertEquals(1, mock.constructed().size(), "HttpClient must be shared across APIs");
 
             HttpClientService httpClient = mock.constructed().getFirst();
 
-            // Inspect internal private field usage indirectly:
-            // They must all hold reference to the same HttpClient instance
             assertSame(httpClient, getHttpClientFromPlayer(p));
             assertSame(httpClient, getHttpClientFromBalance(b));
             assertSame(httpClient, getHttpClientFromTransaction(t));
         }
     }
 
-    // Reflection helpers (needed because HttpClientService is private inside API services)
     private HttpClientService getHttpClientFromPlayer(PlayerApiService api) {
         try {
             var field = PlayerApiService.class.getDeclaredField("http");

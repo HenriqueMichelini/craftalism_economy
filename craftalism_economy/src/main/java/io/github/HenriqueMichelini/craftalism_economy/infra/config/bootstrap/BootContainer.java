@@ -67,7 +67,7 @@ public final class BootContainer {
         this.transactionApiService = apiFactory.getTransactionApi();
 
         // 5. Application Services
-        ApplicationServiceFactory appFactory = new ApplicationServiceFactory(apiFactory);
+        ApplicationServiceFactory appFactory = new ApplicationServiceFactory(javaPlugin, apiFactory);
 
         this.playerApplicationService = appFactory.getPlayerApplication();
         this.payCommandApplicationService = appFactory.getPayCommandApplication();

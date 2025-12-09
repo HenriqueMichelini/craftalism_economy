@@ -3,9 +3,11 @@ package io.github.HenriqueMichelini.craftalism_economy.application.service;
 import io.github.HenriqueMichelini.craftalism_economy.domain.model.Player;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.PayResult;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.PlayerResponseDTO;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.exception.NotFoundException;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.BalanceApiService;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.PlayerApiService;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.TransactionApiService;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -15,17 +17,20 @@ public class PayCommandApplicationService {
     private final PlayerApiService playerApi;
     private final BalanceApiService balanceApi;
     private final TransactionApiService transactionApi;
+    private final JavaPlugin plugin;
 
     public PayCommandApplicationService(
             PlayerApplicationService playerService,
             PlayerApiService playerApi,
             BalanceApiService balanceApi,
-            TransactionApiService transactionApi
+            TransactionApiService transactionApi,
+            JavaPlugin plugin
     ) {
         this.playerService = playerService;
         this.playerApi = playerApi;
         this.balanceApi = balanceApi;
         this.transactionApi = transactionApi;
+        this.plugin = plugin;
     }
 
     public CompletableFuture<PayResult> execute(
@@ -36,7 +41,7 @@ public class PayCommandApplicationService {
     ) {
         return playerService.getCachedOrFetch(payerUuid, payerName)
                 .thenCompose(payer -> processPayment(payer, receiverName, amount))
-                .exceptionally(this::handleException);
+                .exceptionally(this::handleTopLevelException);
     }
 
     private CompletableFuture<PayResult> processPayment(
@@ -46,7 +51,7 @@ public class PayCommandApplicationService {
     ) {
         return playerApi.getPlayerByName(receiverName)
                 .thenCompose(receiver -> validateAndExecutePayment(payer, receiver, amount))
-                .exceptionally(ex -> PayResult.TARGET_NOT_FOUND);
+                .exceptionally(this::handleReceiverLookupException);
     }
 
     private CompletableFuture<PayResult> validateAndExecutePayment(
@@ -80,7 +85,8 @@ public class PayCommandApplicationService {
             long amount
     ) {
         return balanceApi.getBalance(payerUuid)
-                .thenCompose(balance -> checkBalanceAndTransfer(payerUuid, receiverUuid, amount, balance.amount()));
+                .thenCompose(balance -> checkBalanceAndTransfer(payerUuid, receiverUuid, amount, balance.amount()))
+                .exceptionally(ex -> handleTransferException(ex, "balance check"));
     }
 
     private CompletableFuture<PayResult> checkBalanceAndTransfer(
@@ -97,31 +103,197 @@ public class PayCommandApplicationService {
     }
 
     private CompletableFuture<PayResult> performTransfer(UUID payerUuid, UUID receiverUuid, long amount) {
-        return balanceApi.withdraw(payerUuid, amount)
-                .thenCompose(withdrawResult ->
-                        balanceApi.deposit(receiverUuid, amount)
-                                .exceptionallyCompose(depositEx -> {
-                                    // Rollback: refund the withdrawn amount
-                                    //plugin.getLogger().severe("Deposit failed, rolling back withdrawal for " + payerUuid);
-                                    return balanceApi.deposit(payerUuid, amount)
-                                            .thenCompose(v -> CompletableFuture.failedFuture(depositEx));
-                                })
-                )
-                .thenCompose(depositResult ->
-                        transactionApi.register(payerUuid, receiverUuid, amount)
-                                .exceptionally(ex -> {
-                                    //plugin.getLogger().warning("Transaction logging failed (payment completed): " + ex.getMessage());
-                                    return null; // Payment succeeded even if logging failed
-                                })
-                )
+        return withdrawFromPayer(payerUuid, amount)
+                .thenCompose(v -> depositToReceiver(payerUuid, receiverUuid, amount))
+                .thenCompose(v -> logTransaction(payerUuid, receiverUuid, amount))
                 .thenApply(v -> PayResult.SUCCESS)
-                .exceptionally(ex -> {
-                    //plugin.getLogger().severe("Payment failed: " + ex.getMessage());
-                    return PayResult.ERROR;
+                .exceptionally(ex -> handleTransferException(ex, "transfer"));
+    }
+
+    private CompletableFuture<Void> withdrawFromPayer(UUID payerUuid, long amount) {
+        return balanceApi.withdraw(payerUuid, amount);
+    }
+
+    private CompletableFuture<Void> depositToReceiver(UUID payerUuid, UUID receiverUuid, long amount) {
+        return balanceApi.deposit(receiverUuid, amount)
+                .exceptionallyCompose(depositEx ->
+                        handleDepositFailure(payerUuid, receiverUuid, amount, depositEx)
+                );
+    }
+
+    private CompletableFuture<Void> handleDepositFailure(
+            UUID payerUuid,
+            UUID receiverUuid,
+            long amount,
+            Throwable depositEx
+    ) {
+        logError("Deposit failed for " + receiverUuid + ", rolling back withdrawal", depositEx);
+
+        return rollbackWithdrawal(payerUuid, amount)
+                .thenCompose(v -> {
+                    // Rollback succeeded, now fail with the original deposit error
+                    return CompletableFuture.<Void>failedFuture(
+                            new TransferException("Deposit failed and rollback succeeded", depositEx)
+                    );
+                })
+                .exceptionallyCompose(rollbackEx ->
+                        handleRollbackFailure(payerUuid, amount, depositEx, rollbackEx)
+                );
+    }
+
+    private CompletableFuture<Void> rollbackWithdrawal(UUID payerUuid, long amount) {
+        return balanceApi.deposit(payerUuid, amount)
+                .thenApply(v -> {
+                    logInfo("Successfully rolled back withdrawal for " + payerUuid);
+                    return v;
                 });
     }
 
-    private PayResult handleException(Throwable ex) {
-        return PayResult.TARGET_NOT_FOUND;
+    private CompletableFuture<Void> handleRollbackFailure(
+            UUID payerUuid,
+            long amount,
+            Throwable depositEx,
+            Throwable rollbackEx
+    ) {
+        Throwable unwrapped = unwrapException(rollbackEx);
+
+        if (unwrapped instanceof TransferException) {
+            return CompletableFuture.failedFuture(unwrapped);
+        }
+
+        logCritical(
+                "CRITICAL: Rollback failed for " + payerUuid +
+                        ". User has lost " + amount + " coins!",
+                rollbackEx
+        );
+
+        return CompletableFuture.failedFuture(
+                new CriticalTransferException(
+                        "Both deposit and rollback failed",
+                        depositEx,
+                        rollbackEx
+                )
+        );
+    }
+
+    private CompletableFuture<Void> logTransaction(UUID payerUuid, UUID receiverUuid, long amount) {
+        return transactionApi.register(payerUuid, receiverUuid, amount)
+                .thenApply(transaction -> (Void) null)  // Convert to Void
+                .exceptionally(ex -> {
+                    logWarning("Transaction logging failed (payment completed): " + ex.getMessage());
+                    return null; // Payment succeeded, logging is best-effort
+                });
+    }
+
+    private PayResult handleReceiverLookupException(Throwable ex) {
+        Throwable cause = unwrapException(ex);
+
+        if (cause instanceof NotFoundException) {
+            logInfo("Receiver not found: " + cause.getMessage());
+            return PayResult.TARGET_NOT_FOUND;
+        }
+
+        logError("Error looking up receiver", cause);
+        return PayResult.ERROR;
+    }
+
+    private PayResult handleTransferException(Throwable ex, String phase) {
+        Throwable cause = unwrapException(ex);
+
+        if (cause instanceof NotFoundException) {
+            logError("Player not found during " + phase, cause);
+            return PayResult.TARGET_NOT_FOUND;
+        }
+
+        if (cause instanceof TransferException) {
+            logError("Transfer failed during " + phase + " (rollback succeeded)", cause);
+            return PayResult.ERROR;
+        }
+
+        if (cause instanceof CriticalTransferException critical) {
+            logCritical("CRITICAL TRANSFER FAILURE during " + phase, critical);
+            // TODO: Alert admins, create manual intervention ticket
+            return PayResult.ERROR;
+        }
+
+        logError("Unexpected error during " + phase, cause);
+        return PayResult.ERROR;
+    }
+
+    private PayResult handleTopLevelException(Throwable ex) {
+        Throwable cause = unwrapException(ex);
+
+        if (cause instanceof NotFoundException) {
+            logInfo("Payer not found: " + cause.getMessage());
+            return PayResult.TARGET_NOT_FOUND;
+        }
+
+        logError("Top-level error during payment", cause);
+        return PayResult.ERROR;
+    }
+
+    /**
+     * Unwraps CompletionException and ExecutionException to get the root cause.
+     */
+    private Throwable unwrapException(Throwable ex) {
+        Throwable cause = ex;
+        while ((cause instanceof java.util.concurrent.CompletionException ||
+                cause instanceof java.util.concurrent.ExecutionException) &&
+                cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        return cause;
+    }
+
+    private void logInfo(String message) {
+        if (plugin != null) {
+            plugin.getLogger().info(message);
+        }
+    }
+
+    private void logWarning(String message) {
+        if (plugin != null) {
+            plugin.getLogger().warning(message);
+        }
+    }
+
+    private void logError(String message, Throwable ex) {
+        if (plugin != null) {
+            plugin.getLogger().severe(message + ": " + ex.getMessage());
+            if (ex.getCause() != null) {
+                plugin.getLogger().severe("Caused by: " + ex.getCause().getMessage());
+            }
+        }
+    }
+
+    private void logCritical(String message, Throwable ex) {
+        if (plugin != null) {
+            plugin.getLogger().severe("***** CRITICAL ERROR *****");
+            plugin.getLogger().severe(message);
+            plugin.getLogger().severe("Exception: " + ex.getMessage());
+            if (ex.getCause() != null) {
+                plugin.getLogger().severe("Caused by: " + ex.getCause().getMessage());
+            }
+            plugin.getLogger().severe("***** END CRITICAL ERROR *****");
+        }
+    }
+
+    private static class TransferException extends RuntimeException {
+        public TransferException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    private static class CriticalTransferException extends RuntimeException {
+        private final Throwable rollbackException;
+
+        public CriticalTransferException(String message, Throwable transferCause, Throwable rollbackCause) {
+            super(message, transferCause);
+            this.rollbackException = rollbackCause;
+        }
+
+        public Throwable getRollbackException() {
+            return rollbackException;
+        }
     }
 }

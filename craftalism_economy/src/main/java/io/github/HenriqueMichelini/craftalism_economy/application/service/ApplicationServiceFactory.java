@@ -3,6 +3,7 @@ package io.github.HenriqueMichelini.craftalism_economy.application.service;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.repository.BalanceCacheRepository;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.repository.PlayerCacheRepository;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.ApiServiceFactory;
+import org.bukkit.plugin.java.JavaPlugin;
 
 public final class ApplicationServiceFactory {
 
@@ -14,7 +15,8 @@ public final class ApplicationServiceFactory {
     private final BaltopCommandApplicationService baltopCmdApp;
     private final SetBalanceCommandApplicationService setBalanceCmdApp;
 
-    public ApplicationServiceFactory(ApiServiceFactory apis) {
+    public ApplicationServiceFactory(JavaPlugin plugin, ApiServiceFactory apis) {
+
         PlayerCacheRepository playerCache = new PlayerCacheRepository();
 
         this.playerApp = new PlayerApplicationService(
@@ -33,7 +35,8 @@ public final class ApplicationServiceFactory {
                 playerApp,
                 apis.getPlayerApi(),
                 apis.getBalanceApi(),
-                apis.getTransactionApi()
+                apis.getTransactionApi(),
+                plugin
         );
 
         this.balanceCmdApp = new BalanceCommandApplicationService(
