@@ -1,7 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.application.service;
 
 import io.github.HenriqueMichelini.craftalism_economy.application.dto.BalanceExecutionResult;
-import io.github.HenriqueMichelini.craftalism_economy.infra.api.exception.NotFoundException;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.NotFoundException;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;

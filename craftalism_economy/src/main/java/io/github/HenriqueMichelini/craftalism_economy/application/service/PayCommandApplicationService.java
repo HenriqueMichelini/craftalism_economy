@@ -3,14 +3,12 @@ package io.github.HenriqueMichelini.craftalism_economy.application.service;
 import io.github.HenriqueMichelini.craftalism_economy.domain.model.Player;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.PayResult;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.PlayerResponseDTO;
-import io.github.HenriqueMichelini.craftalism_economy.infra.api.exception.NotFoundException;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.NotFoundException;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.BalanceApiService;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.PlayerApiService;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.TransactionApiService;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 

@@ -2,7 +2,7 @@ package io.github.HenriqueMichelini.craftalism_economy.application.service;
 
 import io.github.HenriqueMichelini.craftalism_economy.domain.model.Balance;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.BalanceResponseDTO;
-import io.github.HenriqueMichelini.craftalism_economy.infra.api.exception.NotFoundException;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.NotFoundException;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.repository.BalanceCacheRepository;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.BalanceApiService;
 
