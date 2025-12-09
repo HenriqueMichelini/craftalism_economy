@@ -51,4 +51,8 @@ public class BalanceMessages {
     public void sendBalancePlayerOnly() {
         pluginLogger.info("balance.player_only");
     }
+
+    public void sendBalanceNoPermission(Player messageReceiver) {
+        pluginLogger.send(messageReceiver, "balance.no_permission");
+    }
 }

@@ -38,7 +38,10 @@ class BalanceCommandTest {
         balanceCommand = new BalanceCommand(messages, playerNameCheck, balanceService);
         when(player.getUniqueId()).thenReturn(playerUuid);
         when(player.getName()).thenReturn("TestPlayer");
+
+        when(player.hasPermission(anyString())).thenReturn(true);
     }
+
 
     @AfterEach
     void tearDown() throws Exception {

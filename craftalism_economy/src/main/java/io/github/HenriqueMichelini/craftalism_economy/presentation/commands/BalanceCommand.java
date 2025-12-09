@@ -11,6 +11,8 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 public class BalanceCommand implements CommandExecutor {
+    private static final String PERMISSION_SELF = "craftalism.balance.self";
+    private static final String PERMISSION_OTHER = "craftalism.balance.other";
 
     private final BalanceMessages messages;
     private final PlayerNameCheck playerNameCheck;
@@ -41,6 +43,11 @@ public class BalanceCommand implements CommandExecutor {
             return true;
         }
 
+        if (!player.hasPermission(PERMISSION_SELF)) {
+            messages.sendBalanceNoPermission(player);
+            return true;
+        }
+
         balanceService.executeSelf(player.getUniqueId())
                 .thenAccept(result -> handleResult(player, result, player.getName()));
 
@@ -50,6 +57,11 @@ public class BalanceCommand implements CommandExecutor {
     private boolean handleOtherBalance(CommandSender sender, String targetName) {
         if (!(sender instanceof Player player)) {
             messages.sendBalancePlayerOnly();
+            return true;
+        }
+
+        if (!player.hasPermission(PERMISSION_OTHER)) {
+            messages.sendBalanceNoPermission(player);
             return true;
         }
 

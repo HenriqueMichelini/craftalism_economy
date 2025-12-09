@@ -44,4 +44,8 @@ public class BaltopMessages {
     public void sendBaltopUsage(Player messageReceiver) {
         pluginLogger.send(messageReceiver, "baltop.usage");
     }
+
+    public void sendBaltopNoPermission(Player messageReceiver) {
+        pluginLogger.send(messageReceiver, "baltop.no_permission");
+    }
 }

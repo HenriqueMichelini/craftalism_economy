@@ -47,6 +47,7 @@ class  BaltopCommandTest {
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
         command = new BaltopCommand(messages, service, formatter);
+        when(player.hasPermission(anyString())).thenReturn(true);
     }
 
     @AfterEach

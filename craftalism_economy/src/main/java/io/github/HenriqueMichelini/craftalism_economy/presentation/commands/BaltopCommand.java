@@ -12,6 +12,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public class BaltopCommand implements CommandExecutor {
+    private static final String PERMISSION = "craftalism.baltop";
+
     private final BaltopMessages messages;
     private final BaltopCommandApplicationService service;
     private final CurrencyFormatter formatter;
@@ -26,6 +28,11 @@ public class BaltopCommand implements CommandExecutor {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String @NotNull [] args) {
         if (!(sender instanceof Player player)) {
             messages.sendBaltopPlayerOnly();
+            return true;
+        }
+
+        if (!player.hasPermission(PERMISSION)) {
+            messages.sendBaltopNoPermission(player);
             return true;
         }
 

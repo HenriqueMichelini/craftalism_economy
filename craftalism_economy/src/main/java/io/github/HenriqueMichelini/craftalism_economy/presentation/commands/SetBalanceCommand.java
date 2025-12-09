@@ -12,6 +12,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 public class SetBalanceCommand implements CommandExecutor {
+    private static final String PERMISSION = "craftalism.setbalance";
 
     private final PlayerNameCheck playerNameCheck;
     private final SetBalanceMessages messages;
@@ -31,13 +32,23 @@ public class SetBalanceCommand implements CommandExecutor {
     }
 
     @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String[] args
+    ) {
+        if (!sender.hasPermission(PERMISSION)) {
+            messages.sendSetBalanceNoPermission(sender);
+            return true;
+        }
+
         if (args.length != 2) {
             messages.sendSetBalanceUsage(sender);
             return true;
         }
 
-        String senderName = (sender instanceof Player p) ? p.getName() : "Console";
+        String senderName = getSenderName(sender);
         String targetName = args[0];
 
         if (!playerNameCheck.isValid(targetName)) {
@@ -46,7 +57,6 @@ public class SetBalanceCommand implements CommandExecutor {
         }
 
         Long amount;
-
         try {
             amount = Long.parseLong(args[1]);
         } catch (NumberFormatException e) {
@@ -54,25 +64,53 @@ public class SetBalanceCommand implements CommandExecutor {
             return true;
         }
 
+        if (amount < 0) {
+            messages.sendSetBalanceInvalidAmount(sender);
+            return true;
+        }
+
         service.execute(targetName, amount)
                 .thenAccept(result ->
-                        Bukkit.getScheduler().runTask(plugin, () -> {
-                            switch (result.status()) {
-                                case SUCCESS -> {
-                                    if (result.uuid().isPresent()) {
-                                        Player target = Bukkit.getPlayer(result.uuid().get());
-                                        messages.sendSetBalanceSuccessReceiver(target, String.valueOf(amount), senderName);
-                                    }
-                                    messages.sendSetBalanceSuccessSender(sender, targetName, String.valueOf(amount));
-                                }
-                                case INVALID_AMOUNT -> messages.sendSetBalanceInvalidAmount(sender);
-                                case PLAYER_NOT_FOUND -> messages.sendSetBalancePlayerNotFound(sender);
-                                case UPDATE_FAILED -> messages.sendSetBalanceUpdateFailed(sender);
-                                default -> messages.sendSetBalanceException(sender);
-                            }
-                        })
-                );
+                        Bukkit.getScheduler().runTask(plugin, () ->
+                                handleResult(sender, senderName, targetName, amount, result)
+                        )
+                )
+                .exceptionally(ex -> {
+                    plugin.getLogger().severe("Unexpected error in setbalance command: " + ex.getMessage());
+                    Bukkit.getScheduler().runTask(plugin, () ->
+                            messages.sendSetBalanceException(sender)
+                    );
+                    return null;
+                });
 
         return true;
+    }
+
+    private void handleResult(
+            CommandSender sender,
+            String senderName,
+            String targetName,
+            Long amount,
+            io.github.HenriqueMichelini.craftalism_economy.application.dto.SetBalanceExecutionResult result
+    ) {
+        switch (result.status()) {
+            case SUCCESS -> {
+                if (result.uuid().isPresent()) {
+                    Player target = Bukkit.getPlayer(result.uuid().get());
+                    if (target != null && target.isOnline()) {
+                        messages.sendSetBalanceSuccessReceiver(target, String.valueOf(amount), senderName);
+                    }
+                }
+                messages.sendSetBalanceSuccessSender(sender, targetName, String.valueOf(amount));
+            }
+            case INVALID_AMOUNT -> messages.sendSetBalanceInvalidAmount(sender);
+            case PLAYER_NOT_FOUND -> messages.sendSetBalancePlayerNotFound(sender);
+            case UPDATE_FAILED -> messages.sendSetBalanceUpdateFailed(sender);
+            default -> messages.sendSetBalanceException(sender);
+        }
+    }
+
+    private String getSenderName(CommandSender sender) {
+        return (sender instanceof Player player) ? player.getName() : "Console";
     }
 }

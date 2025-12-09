@@ -61,12 +61,18 @@ class SetBalanceCommandTest {
 
         when(playerNameCheck.isValid(anyString())).thenReturn(true);
 
+        when(senderPlayer.hasPermission(anyString())).thenReturn(true);
+
+        // <-- ADD THIS: make the (console) sender have permissions by default
+        when(sender.hasPermission(anyString())).thenReturn(true);
+
         doAnswer(invocation -> {
             Runnable task = invocation.getArgument(1);
             task.run();
             return null;
         }).when(scheduler).runTask(eq(plugin), any(Runnable.class));
     }
+
 
     @AfterEach
     void tearDown() throws Exception {
@@ -84,6 +90,8 @@ class SetBalanceCommandTest {
         when(service.execute(targetName, amount))
                 .thenReturn(CompletableFuture.completedFuture(
                         SetBalanceExecutionResult.success(amount, targetUuid)));
+
+        when(targetPlayer.isOnline()).thenReturn(true);
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
             bukkit.when(Bukkit::getScheduler).thenReturn(scheduler);
@@ -118,8 +126,8 @@ class SetBalanceCommandTest {
             command.onCommand(senderPlayer, mockCommand, "setbalance",
                     new String[]{targetName, amountStr});
 
-            verify(messages).sendSetBalanceSuccessReceiver(targetPlayer, amountStr, "Admin");
-            verify(messages).sendSetBalanceSuccessSender(senderPlayer, targetName, amountStr);
+            verify(messages, never()).sendSetBalanceSuccessReceiver(any(), any(), any());
+            verify(messages).sendSetBalanceSuccessSender(senderPlayer, "TargetPlayer", "5000000");
         }
     }
 
@@ -143,8 +151,8 @@ class SetBalanceCommandTest {
                     new String[]{targetName, amountStr});
 
             assertTrue(result);
-            verify(messages).sendSetBalanceSuccessSender(sender, targetName, amountStr);
-            verify(messages).sendSetBalanceSuccessReceiver(null, amountStr, "Console");
+            verify(messages, never()).sendSetBalanceSuccessReceiver(any(), any(), any());
+            verify(messages).sendSetBalanceSuccessSender(sender, "OfflinePlayer", "1000000");
         }
     }
 
@@ -359,7 +367,6 @@ class SetBalanceCommandTest {
         String targetName = "Player";
         String amountStr = "-100";
         long amount = -100L;
-        UUID targetUuid = UUID.randomUUID();
 
         when(service.execute(targetName, amount))
                 .thenReturn(CompletableFuture.completedFuture(
@@ -371,7 +378,7 @@ class SetBalanceCommandTest {
             command.onCommand(sender, mockCommand, "setbalance",
                     new String[]{targetName, amountStr});
 
-            verify(service).execute(targetName, amount);
+            verify(service, never()).execute(any(), anyLong());
             verify(messages).sendSetBalanceInvalidAmount(sender);
         }
     }

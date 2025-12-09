@@ -59,7 +59,6 @@ class PayCommandApplicationServiceTest {
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
 
-        // Mock the logger to prevent NullPointerException
         when(plugin.getLogger()).thenReturn(logger);
 
         service = new PayCommandApplicationService(
@@ -74,7 +73,7 @@ class PayCommandApplicationServiceTest {
         receiverUuid = UUID.randomUUID();
         payerName = "Payer";
         receiverName = "Receiver";
-        validAmount = 100_0000L; // $100.00
+        validAmount = 100_0000L;
 
         payerPlayer = new Player(payerUuid, payerName, Instant.now());
         receiverDTO = new PlayerResponseDTO(receiverUuid, receiverName, Instant.now());

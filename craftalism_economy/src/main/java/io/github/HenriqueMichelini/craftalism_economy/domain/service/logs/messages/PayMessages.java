@@ -70,4 +70,8 @@ public class PayMessages {
     public void sendPayException(Player messageReceiver) {
         pluginLogger.send(messageReceiver, "pay.error.exception");
     }
+
+    public void sendPayNoPermission(Player messageReceiver) {
+        pluginLogger.send(messageReceiver, "pay.error.no_permission");
+    }
 }

@@ -6,5 +6,6 @@ public enum PayResult {
     NOT_ENOUGH_FUNDS,
     INVALID_AMOUNT,
     CANNOT_PAY_SELF,
-    ERROR
+    ERROR,
+    NO_PERMISSION
 }
