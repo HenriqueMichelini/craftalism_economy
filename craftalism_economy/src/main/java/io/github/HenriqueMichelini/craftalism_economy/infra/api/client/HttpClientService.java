@@ -1,9 +1,14 @@
 package io.github.HenriqueMichelini.craftalism_economy.infra.api.client;
 
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.exception.ApiTimeoutException;
+
 import java.net.URI;
 import java.net.http.*;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class HttpClientService {
 
@@ -26,23 +31,34 @@ public class HttpClientService {
     }
 
     public CompletableFuture<HttpResponse<String>> get(String path) {
-        return http.sendAsync(
-                request(path).GET().build(),
-                HttpResponse.BodyHandlers.ofString()
-        );
+        return send(request(path).GET().build(), path);
     }
 
     public CompletableFuture<HttpResponse<String>> post(String path, String body) {
-        return http.sendAsync(
-                request(path).POST(HttpRequest.BodyPublishers.ofString(body)).build(),
-                HttpResponse.BodyHandlers.ofString()
-        );
+        return send(request(path).POST(HttpRequest.BodyPublishers.ofString(body)).build(), path);
     }
 
     public CompletableFuture<HttpResponse<String>> put(String path, String body) {
-        return http.sendAsync(
-                request(path).PUT(HttpRequest.BodyPublishers.ofString(body)).build(),
-                HttpResponse.BodyHandlers.ofString()
+        return send(request(path).PUT(HttpRequest.BodyPublishers.ofString(body)).build(), path);
+    }
+
+    private CompletableFuture<HttpResponse<String>> send(HttpRequest request, String path) {
+        return withTimeoutHandling(path,
+                http.sendAsync(request, HttpResponse.BodyHandlers.ofString())
         );
+    }
+
+    private <T> CompletableFuture<T> withTimeoutHandling(String path, CompletableFuture<T> future) {
+        return future
+                .orTimeout(10, TimeUnit.SECONDS)
+                .exceptionally(ex -> {
+                    Throwable cause = ex instanceof CompletionException ? ex.getCause() : ex;
+
+                    if (cause instanceof TimeoutException) {
+                        throw new ApiTimeoutException("Request timed out: " + path, cause);
+                    }
+
+                    throw new CompletionException(cause);
+                });
     }
 }
