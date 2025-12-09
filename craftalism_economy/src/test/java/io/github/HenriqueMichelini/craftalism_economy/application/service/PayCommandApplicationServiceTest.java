@@ -5,7 +5,7 @@ import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.PayRe
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.BalanceResponseDTO;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.PlayerResponseDTO;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.TransactionResponseDTO;
-import io.github.HenriqueMichelini.craftalism_economy.infra.api.exception.NotFoundException;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.NotFoundException;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.BalanceApiService;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.PlayerApiService;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.TransactionApiService;

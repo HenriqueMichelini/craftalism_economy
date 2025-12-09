@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.client.HttpClientService;
 import io.github.HenriqueMichelini.craftalism_economy.infra.config.GsonFactory;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.*;
-import io.github.HenriqueMichelini.craftalism_economy.infra.api.exception.NotFoundException;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.NotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
