@@ -1,6 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions;
 
-public class ApiTimeoutException extends RuntimeException {
+public class ApiTimeoutException extends ClientException {
 
     public ApiTimeoutException() { }
 
