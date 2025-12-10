@@ -42,10 +42,30 @@ public class HttpClientService {
         return send(request(path).PUT(HttpRequest.BodyPublishers.ofString(body)).build(), path);
     }
 
+//    private CompletableFuture<HttpResponse<String>> send(HttpRequest request, String path) {
+//        return withTimeoutHandling(path,
+//                http.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+//        );
+//    }
+
     private CompletableFuture<HttpResponse<String>> send(HttpRequest request, String path) {
+        System.out.println("[HttpClient] -> " + request.uri());
         return withTimeoutHandling(path,
                 http.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                        .whenComplete((resp, err) -> {
+                            if (resp != null) {
+                                System.out.println("[HttpClient] <- " + resp.statusCode()
+                                        + " : " + safePreview(resp.body()));
+                            } else {
+                                System.out.println("[HttpClient] <- ERROR : " + err);
+                            }
+                        })
         );
+    }
+
+    private String safePreview(String body) {
+        if (body == null) return "<null>";
+        return body.length() > 300 ? body.substring(0, 300) + "..." : body;
     }
 
     private <T> CompletableFuture<T> withTimeoutHandling(String path, CompletableFuture<T> future) {

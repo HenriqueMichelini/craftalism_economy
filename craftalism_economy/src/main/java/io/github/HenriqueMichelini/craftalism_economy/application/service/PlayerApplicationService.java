@@ -2,6 +2,7 @@ package io.github.HenriqueMichelini.craftalism_economy.application.service;
 
 import io.github.HenriqueMichelini.craftalism_economy.domain.model.Player;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.PlayerResponseDTO;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.ApiServerException;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.NotFoundException;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.repository.PlayerCacheRepository;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.PlayerApiService;
@@ -71,12 +72,23 @@ public class PlayerApplicationService {
     public CompletableFuture<PlayerResponseDTO> getOrCreatePlayer(UUID uuid, String name) {
         return api.getPlayerByUuid(uuid)
                 .exceptionallyCompose(ex -> {
-                    if (ex instanceof NotFoundException) {
+                    // If player does NOT exist OR if API errored, try to create
+                    if (ex instanceof NotFoundException || ex instanceof ApiServerException) {
                         return api.createPlayer(uuid, name);
                     }
                     return CompletableFuture.failedFuture(ex);
                 });
     }
+
+//    public CompletableFuture<PlayerResponseDTO> getOrCreatePlayer(UUID uuid, String name) {
+//        return api.getPlayerByUuid(uuid)
+//                .exceptionallyCompose(ex -> {
+//                    if (ex instanceof NotFoundException) {
+//                        return api.createPlayer(uuid, name);
+//                    }
+//                    return CompletableFuture.failedFuture(ex);
+//                });
+//    }
 
     public CompletableFuture<Player> getCachedOrFetch(UUID uuid, String name) {
         Optional<Player> cached = cache.find(uuid);

@@ -13,6 +13,7 @@ import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.PlayerAp
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.TransactionApiService;
 import io.github.HenriqueMichelini.craftalism_economy.infra.config.ConfigLoader;
 import io.github.HenriqueMichelini.craftalism_economy.presentation.commands.CommandRegistrar;
+import io.github.HenriqueMichelini.craftalism_economy.presentation.listeners.EventRegistrar;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class BootContainer {
@@ -81,6 +82,11 @@ public final class BootContainer {
                 plugin,
                 appFactory,
                 formatterFactory
+        ).registerAll();
+
+        new EventRegistrar(
+                plugin,
+                playerApplicationService
         ).registerAll();
     }
 

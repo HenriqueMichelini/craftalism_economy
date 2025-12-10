@@ -7,15 +7,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 import java.util.UUID;
-import java.util.logging.Logger;
 
 public class OnJoin implements Listener {
     private final PlayerApplicationService service;
-    private final Logger logger;
 
-    public OnJoin(PlayerApplicationService service, Logger logger) {
+    public OnJoin(PlayerApplicationService service) {
         this.service = service;
-        this.logger = logger;
     }
 
     @EventHandler
@@ -27,7 +24,7 @@ public class OnJoin implements Listener {
 
         service.loadPlayerOnJoin(uuid, name)
                 .exceptionally(ex -> {
-                    logger.warning("Erro ao carregar player " + uuid + ": " + ex);
+                    System.out.println("Erro ao carregar player " + uuid + ": " + ex);
                     return null;
                 });
 

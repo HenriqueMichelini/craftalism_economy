@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'com.gradleup.shadow' version '8.3.0'
 }
 
 group = 'io.github.HenriqueMichelini'
@@ -7,67 +8,65 @@ version = '1.2-SNAPSHOT'
 
 repositories {
     mavenCentral()
-    maven {
-        name = "papermc-repo"
-        url = "https://repo.papermc.io/repository/maven-public/"
-    }
-    maven {
-        name = "sonatype"
-        url = "https://oss.sonatype.org/content/groups/public/"
-    }
+    maven { url = "https://repo.papermc.io/repository/maven-public/" }
+    maven { url = "https://oss.sonatype.org/content/groups/public/" }
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
-    testImplementation(platform('org.junit:junit-bom:5.13.4'))
-    testImplementation('org.junit.jupiter:junit-jupiter')
-    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+    compileOnly "io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT"
+
+    // Testing
+    testImplementation platform("org.junit:junit-bom:5.13.4")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
     testImplementation "org.mockito:mockito-core:5.19.0"
     testImplementation 'org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.0.0'
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
 
+    // Shaded libs
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+}
+
+shadowJar {
+    exclude 'org/mockbukkit/**'
+    exclude 'junit/**'
+    exclude 'org/junit/**'
+    exclude 'org/mockito/**'
+
+    relocate 'com.github.benmanes.caffeine', 'io.github.HenriqueMichelini.craftalism_economy.libs.caffeine'
+    relocate 'org.apache.http', 'io.github.HenriqueMichelini.craftalism_economy.libs.apache.http'
+
+    archiveClassifier.set('shadow')
+}
+
+
+configurations {
+    testImplementation {
+        extendsFrom = []
+    }
 }
 
 test {
     useJUnitPlatform()
-    testLogging {
-        events "passed", "skipped", "failed"
-    }
-    jvmArgs = [
-            "-XX:+EnableDynamicAgentLoading",
-            "-Djdk.instrument.traceUsage"
-    ]
+    testLogging { events "passed", "skipped", "failed" }
+    jvmArgs "-XX:+EnableDynamicAgentLoading", "-Djdk.instrument.traceUsage"
 }
 
 def targetJavaVersion = 21
 java {
-    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    sourceCompatibility = javaVersion
-    targetCompatibility = javaVersion
-    if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-    }
+    toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-
-    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
-        options.release.set(targetJavaVersion)
-    }
+    options.release.set(targetJavaVersion)
 }
 
 processResources {
-    def props = [version: version]
-    inputs.properties props
+    inputs.properties(version: version)
     filteringCharset 'UTF-8'
-    filesMatching('plugin.yml') {
-        expand props
-    }
-    from(sourceSets.main.resources)
-}
 
-tasks.jar {
-    archiveFileName = "craftalism_economy-1.2-SNAPSHOT.jar" // Set the output JAR file name
+    filesMatching('plugin.yml') {
+        expand(version: version)
+    }
 }

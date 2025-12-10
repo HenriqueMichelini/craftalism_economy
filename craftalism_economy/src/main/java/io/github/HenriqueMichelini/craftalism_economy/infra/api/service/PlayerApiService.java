@@ -7,6 +7,8 @@ import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.PlayerRespon
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.*;
 import io.github.HenriqueMichelini.craftalism_economy.infra.config.GsonFactory;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -79,7 +81,7 @@ public class PlayerApiService {
     }
 
     public CompletableFuture<PlayerResponseDTO> getPlayerByUuid(UUID uuid) {
-        return http.get("/players/" + uuid)
+        return http.get("/api/players/" + uuid)
                 .thenCompose(resp -> unwrapOrThrow(
                         resp.statusCode(),
                         resp.body()
@@ -87,7 +89,8 @@ public class PlayerApiService {
     }
 
     public CompletableFuture<PlayerResponseDTO> getPlayerByName(String name) {
-        return http.get("/players/" + name)
+        String encoded = URLEncoder.encode(name, StandardCharsets.UTF_8);
+        return http.get("/api/players/name/" + encoded)
                 .thenCompose(resp -> unwrapOrThrow(
                         resp.statusCode(),
                         resp.body()
@@ -98,7 +101,7 @@ public class PlayerApiService {
         PlayerRequestDTO dto = new PlayerRequestDTO(uuid, name);
         String json = gson.toJson(dto);
 
-        return http.post("/players", json)
+        return http.post("/api/players", json)
                 .thenCompose(resp -> unwrapOrThrow(
                         resp.statusCode(),
                         resp.body()
@@ -108,7 +111,16 @@ public class PlayerApiService {
     public CompletableFuture<PlayerResponseDTO> getOrCreatePlayer(UUID uuid, String name) {
         return getPlayerByUuid(uuid)
                 .exceptionallyCompose(ex -> {
-                    if (ex instanceof NotFoundException) {
+                    // Unwrap CompletionException to get the real cause
+                    Throwable cause = ex;
+                    while (cause.getCause() != null &&
+                            (cause instanceof java.util.concurrent.CompletionException ||
+                                    cause instanceof java.util.concurrent.ExecutionException)) {
+                        cause = cause.getCause();
+                    }
+
+                    // Check if the unwrapped cause is NotFoundException
+                    if (cause instanceof NotFoundException) {
                         return createPlayer(uuid, name);
                     }
                     return CompletableFuture.failedFuture(ex);

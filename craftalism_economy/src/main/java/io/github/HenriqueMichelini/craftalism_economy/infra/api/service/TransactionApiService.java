@@ -80,7 +80,7 @@ public class TransactionApiService {
         TransactionRequestDTO dto = new TransactionRequestDTO(from, to, amount);
         String json = gson.toJson(dto);
 
-        return http.post("/transactions", json)
+        return http.post("/api/transactions", json)
                 .thenCompose(resp -> unwrapOrThrow(
                         resp.statusCode(),
                         resp.body()
