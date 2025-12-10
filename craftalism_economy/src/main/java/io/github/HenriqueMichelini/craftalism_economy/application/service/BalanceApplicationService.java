@@ -2,6 +2,7 @@ package io.github.HenriqueMichelini.craftalism_economy.application.service;
 
 import io.github.HenriqueMichelini.craftalism_economy.domain.model.Balance;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.BalanceResponseDTO;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.ApiServerException;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.NotFoundException;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.repository.BalanceCacheRepository;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.service.BalanceApiService;
@@ -33,15 +34,34 @@ public class BalanceApplicationService {
 
     public CompletableFuture<Balance> getOrCreateBalance(UUID uuid) {
         return api.getBalance(uuid)
-                .exceptionallyCompose(ex ->
-                        isNotFoundException(ex)
-                                ? api.createBalance(uuid)
-                                : CompletableFuture.failedFuture(ex)
-                )
+                .exceptionallyCompose(ex -> {
+
+                    Throwable cause = ex;
+                    while (cause.getCause() != null &&
+                            (cause instanceof CompletionException || cause instanceof java.util.concurrent.ExecutionException)) {
+                        cause = cause.getCause();
+                    }
+
+                    if (cause instanceof NotFoundException) {
+                        return api.createBalance(uuid);
+                    }
+
+                    return CompletableFuture.failedFuture(ex);
+                })
                 .thenApply(this::toBalance);
     }
 
-    public CompletableFuture<Balance> loadOnJoin(UUID uuid) {
+//    public CompletableFuture<Balance> getOrCreateBalance(UUID uuid) {
+//        return api.getBalance(uuid)
+//                .exceptionallyCompose(ex ->
+//                        isNotFoundException(ex)
+//                                ? api.createBalance(uuid)
+//                                : CompletableFuture.failedFuture(ex)
+//                )
+//                .thenApply(this::toBalance);
+//    }
+
+    public CompletableFuture<Balance> loadBalanceOnJoin(UUID uuid) {
         return getOrCreateBalance(uuid)
                 .thenApply(balance -> {
                     cache.save(balance);
@@ -61,7 +81,7 @@ public class BalanceApplicationService {
     public CompletableFuture<Balance> getCachedOrFetch(UUID uuid) {
         return cache.find(uuid)
                 .map(CompletableFuture::completedFuture)
-                .orElseGet(() -> loadOnJoin(uuid));
+                .orElseGet(() -> loadBalanceOnJoin(uuid));
     }
 
     public CompletableFuture<Balance> updateBalance(UUID uuid, Long amount) {

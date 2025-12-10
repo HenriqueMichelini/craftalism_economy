@@ -72,7 +72,6 @@ public class PlayerApplicationService {
     public CompletableFuture<PlayerResponseDTO> getOrCreatePlayer(UUID uuid, String name) {
         return api.getPlayerByUuid(uuid)
                 .exceptionallyCompose(ex -> {
-                    // If player does NOT exist OR if API errored, try to create
                     if (ex instanceof NotFoundException || ex instanceof ApiServerException) {
                         return api.createPlayer(uuid, name);
                     }

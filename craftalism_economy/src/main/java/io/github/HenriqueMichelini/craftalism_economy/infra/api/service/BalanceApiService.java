@@ -3,12 +3,14 @@ package io.github.HenriqueMichelini.craftalism_economy.infra.api.service;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.client.HttpClientService;
+import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.BalanceRequestDTO;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.BalanceResponseDTO;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.BalanceUpdateRequestDTO;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.ApiException;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.ApiServerException;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.NotFoundException;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.exceptions.RateLimitException;
+import io.github.HenriqueMichelini.craftalism_economy.infra.config.GsonFactory;
 
 import java.lang.reflect.Type;
 import java.util.List;
@@ -18,10 +20,15 @@ import java.util.concurrent.CompletableFuture;
 public class BalanceApiService {
 
     private final HttpClientService http;
-    private final Gson gson = new Gson();
+    private final Gson gson;
 
     public BalanceApiService(HttpClientService http) {
+        this(http, GsonFactory.getInstance());
+    }
+
+    public BalanceApiService(HttpClientService http, Gson gson) {
         this.http = http;
+        this.gson = gson;
     }
 
     public CompletableFuture<BalanceResponseDTO> getBalance(UUID uuid) {
@@ -44,8 +51,8 @@ public class BalanceApiService {
     }
 
     public CompletableFuture<BalanceResponseDTO> createBalance(UUID uuid) {
-        BalanceResponseDTO dto = new BalanceResponseDTO(uuid, 0L);
-        return http.post("/api/balances/", gson.toJson(dto))
+        BalanceRequestDTO dto = new BalanceRequestDTO(uuid, 0L);
+        return http.post("/api/balances", gson.toJson(dto))
                 .thenCompose(resp -> {
                     int status = resp.statusCode();
                     String body = resp.body();
@@ -77,7 +84,7 @@ public class BalanceApiService {
         BalanceResponseDTO dto = new BalanceResponseDTO(uuid, amount);
         String body = gson.toJson(dto);
 
-        return http.put("/api/balances/" + uuid, body)
+        return http.put("/api/balances" + uuid, body)
                 .thenCompose(resp -> {
                     int status = resp.statusCode();
                     String respBody = resp.body();
@@ -114,7 +121,7 @@ public class BalanceApiService {
     public CompletableFuture<Void> withdraw(UUID uuid, long amount) {
         BalanceUpdateRequestDTO dto = new BalanceUpdateRequestDTO(amount);
 
-        return http.post("/api/balances/" + uuid + "/withdraw/", gson.toJson(dto))
+        return http.post("/api/balances/" + uuid + "/withdraw", gson.toJson(dto))
                 .thenCompose(resp -> {
                     int status = resp.statusCode();
                     String body = resp.body();
@@ -146,8 +153,6 @@ public class BalanceApiService {
                     return CompletableFuture.failedFuture(mapStatusToException(status, body));
                 });
     }
-
-    // ---- Helpers ----
 
     private <T> T parseJson(String body) {
         try {

@@ -86,7 +86,8 @@ public final class BootContainer {
 
         new EventRegistrar(
                 plugin,
-                playerApplicationService
+                playerApplicationService,
+                balanceApplicationService
         ).registerAll();
     }
 

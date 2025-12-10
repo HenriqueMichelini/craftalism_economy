@@ -110,13 +110,13 @@ class BalanceApplicationServiceTest {
     }
 
     @Test
-    void loadOnJoin_ShouldCacheBalance_WhenLoaded() {
+    void loadBalanceOnJoin_ShouldCacheBalance_WhenLoaded() {
         Long amount = 3000000L;
         BalanceResponseDTO dto = new BalanceResponseDTO(playerUuid, amount);
         when(api.getBalance(playerUuid))
                 .thenReturn(CompletableFuture.completedFuture(dto));
 
-        Balance result = service.loadOnJoin(playerUuid).join();
+        Balance result = service.loadBalanceOnJoin(playerUuid).join();
 
         assertEquals(amount, result.getAmount());
         verify(cache).save(result);

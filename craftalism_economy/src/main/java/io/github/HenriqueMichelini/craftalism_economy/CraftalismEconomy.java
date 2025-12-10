@@ -6,7 +6,6 @@ import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.Cu
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.PluginLogger;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.*;
 import io.github.HenriqueMichelini.craftalism_economy.infra.config.bootstrap.BootContainer;
-import io.github.HenriqueMichelini.craftalism_economy.presentation.listeners.OnJoin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class CraftalismEconomy extends JavaPlugin {
