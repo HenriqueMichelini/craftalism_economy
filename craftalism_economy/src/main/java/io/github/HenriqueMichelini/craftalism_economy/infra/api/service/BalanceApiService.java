@@ -84,7 +84,7 @@ public class BalanceApiService {
         BalanceResponseDTO dto = new BalanceResponseDTO(uuid, amount);
         String body = gson.toJson(dto);
 
-        return http.put("/api/balances" + uuid, body)
+        return http.put("/api/balances/" + uuid + "/set?amount=" + amount, body)
                 .thenCompose(resp -> {
                     int status = resp.statusCode();
                     String respBody = resp.body();
@@ -105,7 +105,7 @@ public class BalanceApiService {
     public CompletableFuture<Void> deposit(UUID uuid, long amount) {
         BalanceUpdateRequestDTO dto = new BalanceUpdateRequestDTO(amount);
 
-        return http.post("/api/balances/" + uuid + "/deposit", gson.toJson(dto))
+        return http.post("/api/balances/" + uuid + "/deposit?amount=" + amount, gson.toJson(dto))
                 .thenCompose(resp -> {
                     int status = resp.statusCode();
                     String body = resp.body();
@@ -121,7 +121,7 @@ public class BalanceApiService {
     public CompletableFuture<Void> withdraw(UUID uuid, long amount) {
         BalanceUpdateRequestDTO dto = new BalanceUpdateRequestDTO(amount);
 
-        return http.post("/api/balances/" + uuid + "/withdraw", gson.toJson(dto))
+        return http.post("/api/balances/" + uuid + "/withdraw?amount=" + amount, gson.toJson(dto))
                 .thenCompose(resp -> {
                     int status = resp.statusCode();
                     String body = resp.body();
@@ -150,6 +150,7 @@ public class BalanceApiService {
                         }
                     }
 
+                    System.out.println("TOP BALANCE RAW JSON = " + body);
                     return CompletableFuture.failedFuture(mapStatusToException(status, body));
                 });
     }

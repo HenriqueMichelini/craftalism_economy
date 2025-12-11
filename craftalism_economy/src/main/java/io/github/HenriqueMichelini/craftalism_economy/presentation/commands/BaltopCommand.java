@@ -58,6 +58,7 @@ public class BaltopCommand implements CommandExecutor {
 
         int position = 1;
         for (BaltopCommandApplicationService.BaltopEntry entry : entries) {
+            System.out.println("API raw = " + entry.getBalance());
             String formattedBalance = formatter.formatCurrency(entry.getBalance());
             messages.sendBaltopEntry(player, String.valueOf(position), entry.getPlayerName(), formattedBalance);
             position++;
