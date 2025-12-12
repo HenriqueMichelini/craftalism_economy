@@ -1,7 +1,7 @@
 package io.github.HenriqueMichelini.craftalism_economy.application.service;
 
 import io.github.HenriqueMichelini.craftalism_economy.domain.model.Player;
-import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.PayResult;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.PayStatus;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.BalanceResponseDTO;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.PlayerResponseDTO;
 import io.github.HenriqueMichelini.craftalism_economy.infra.api.dto.TransactionResponseDTO;
@@ -105,9 +105,9 @@ class PayCommandApplicationServiceTest {
                         new TransactionResponseDTO(1L, payerUuid, receiverUuid, validAmount, Instant.now())
                 ));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.SUCCESS, result);
+        assertEquals(PayStatus.SUCCESS, result);
 
         verify(playerService).getCachedOrFetch(payerUuid, payerName);
         verify(playerApi).getPlayerByName(receiverName);
@@ -138,9 +138,9 @@ class PayCommandApplicationServiceTest {
                         new TransactionResponseDTO(1L, payerUuid, receiverUuid, exactAmount, Instant.now())
                 ));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, exactAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, exactAmount).get();
 
-        assertEquals(PayResult.SUCCESS, result);
+        assertEquals(PayStatus.SUCCESS, result);
     }
 
     @Test
@@ -153,9 +153,9 @@ class PayCommandApplicationServiceTest {
         when(playerApi.getPlayerByName(payerName))
                 .thenReturn(CompletableFuture.completedFuture(selfDTO));
 
-        PayResult result = service.execute(payerUuid, payerName, payerName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, payerName, validAmount).get();
 
-        assertEquals(PayResult.CANNOT_PAY_SELF, result);
+        assertEquals(PayStatus.CANNOT_PAY_SELF, result);
 
         verify(playerService).getCachedOrFetch(payerUuid, payerName);
         verify(playerApi).getPlayerByName(payerName);
@@ -171,9 +171,9 @@ class PayCommandApplicationServiceTest {
         when(playerApi.getPlayerByName(receiverName))
                 .thenReturn(CompletableFuture.completedFuture(receiverDTO));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, 0L).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, 0L).get();
 
-        assertEquals(PayResult.INVALID_AMOUNT, result);
+        assertEquals(PayStatus.INVALID_AMOUNT, result);
 
         verify(balanceApi, never()).getBalance(any());
         verify(balanceApi, never()).withdraw(any(), anyLong());
@@ -187,9 +187,9 @@ class PayCommandApplicationServiceTest {
         when(playerApi.getPlayerByName(receiverName))
                 .thenReturn(CompletableFuture.completedFuture(receiverDTO));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, -100L).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, -100L).get();
 
-        assertEquals(PayResult.INVALID_AMOUNT, result);
+        assertEquals(PayStatus.INVALID_AMOUNT, result);
 
         verify(balanceApi, never()).getBalance(any());
     }
@@ -202,9 +202,9 @@ class PayCommandApplicationServiceTest {
         when(playerApi.getPlayerByName(receiverName))
                 .thenReturn(CompletableFuture.failedFuture(new NotFoundException("Player not found")));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.TARGET_NOT_FOUND, result);
+        assertEquals(PayStatus.TARGET_NOT_FOUND, result);
 
         verify(playerService).getCachedOrFetch(payerUuid, payerName);
         verify(playerApi).getPlayerByName(receiverName);
@@ -219,9 +219,9 @@ class PayCommandApplicationServiceTest {
         when(playerApi.getPlayerByName(receiverName))
                 .thenReturn(CompletableFuture.failedFuture(new RuntimeException("API Error")));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.ERROR, result);
+        assertEquals(PayStatus.ERROR, result);
 
         verify(playerService).getCachedOrFetch(payerUuid, payerName);
         verify(playerApi).getPlayerByName(receiverName);
@@ -241,9 +241,9 @@ class PayCommandApplicationServiceTest {
         when(balanceApi.getBalance(payerUuid))
                 .thenReturn(CompletableFuture.completedFuture(dto));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.NOT_ENOUGH_FUNDS, result);
+        assertEquals(PayStatus.NOT_ENOUGH_FUNDS, result);
 
         verify(balanceApi).getBalance(payerUuid);
         verify(balanceApi, never()).withdraw(any(), anyLong());
@@ -264,9 +264,9 @@ class PayCommandApplicationServiceTest {
         when(balanceApi.getBalance(payerUuid))
                 .thenReturn(CompletableFuture.completedFuture(dto));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.NOT_ENOUGH_FUNDS, result);
+        assertEquals(PayStatus.NOT_ENOUGH_FUNDS, result);
     }
 
     @Test
@@ -275,9 +275,9 @@ class PayCommandApplicationServiceTest {
         when(playerService.getCachedOrFetch(payerUuid, payerName))
                 .thenReturn(CompletableFuture.failedFuture(new NotFoundException("Payer not found")));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.TARGET_NOT_FOUND, result);
+        assertEquals(PayStatus.TARGET_NOT_FOUND, result);
 
         verify(playerApi, never()).getPlayerByName(any());
         verify(balanceApi, never()).getBalance(any());
@@ -289,9 +289,9 @@ class PayCommandApplicationServiceTest {
         when(playerService.getCachedOrFetch(payerUuid, payerName))
                 .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Database error")));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.ERROR, result);
+        assertEquals(PayStatus.ERROR, result);
 
         verify(playerApi, never()).getPlayerByName(any());
         verify(balanceApi, never()).getBalance(any());
@@ -307,9 +307,9 @@ class PayCommandApplicationServiceTest {
         when(balanceApi.getBalance(payerUuid))
                 .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Balance API error")));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.ERROR, result);
+        assertEquals(PayStatus.ERROR, result);
 
         verify(balanceApi, never()).withdraw(any(), anyLong());
     }
@@ -329,9 +329,9 @@ class PayCommandApplicationServiceTest {
         when(balanceApi.withdraw(payerUuid, validAmount))
                 .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Withdraw failed")));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.ERROR, result);
+        assertEquals(PayStatus.ERROR, result);
 
         verify(balanceApi).withdraw(payerUuid, validAmount);
         verify(balanceApi, never()).deposit(receiverUuid, validAmount);
@@ -358,9 +358,9 @@ class PayCommandApplicationServiceTest {
         when(balanceApi.deposit(payerUuid, validAmount))
                 .thenReturn(CompletableFuture.completedFuture(null));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.ERROR, result);
+        assertEquals(PayStatus.ERROR, result);
 
         verify(balanceApi).withdraw(payerUuid, validAmount);
         verify(balanceApi).deposit(receiverUuid, validAmount);
@@ -387,10 +387,10 @@ class PayCommandApplicationServiceTest {
         when(transactionApi.register(payerUuid, receiverUuid, validAmount))
                 .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Transaction log failed")));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
         // Payment succeeded even though logging failed
-        assertEquals(PayResult.SUCCESS, result);
+        assertEquals(PayStatus.SUCCESS, result);
 
         verify(transactionApi).register(payerUuid, receiverUuid, validAmount);
     }
@@ -415,9 +415,9 @@ class PayCommandApplicationServiceTest {
         when(balanceApi.deposit(payerUuid, validAmount))
                 .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Rollback failed")));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.ERROR, result);
+        assertEquals(PayStatus.ERROR, result);
 
         verify(balanceApi).withdraw(payerUuid, validAmount);
         verify(balanceApi).deposit(receiverUuid, validAmount);
@@ -447,9 +447,9 @@ class PayCommandApplicationServiceTest {
                         new TransactionResponseDTO(1L, payerUuid, receiverUuid, largeAmount, Instant.now())
                 ));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, largeAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, largeAmount).get();
 
-        assertEquals(PayResult.SUCCESS, result);
+        assertEquals(PayStatus.SUCCESS, result);
     }
 
     @Test
@@ -474,9 +474,9 @@ class PayCommandApplicationServiceTest {
                         new TransactionResponseDTO(1L, payerUuid, receiverUuid, minAmount, Instant.now())
                 ));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, minAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, minAmount).get();
 
-        assertEquals(PayResult.SUCCESS, result);
+        assertEquals(PayStatus.SUCCESS, result);
     }
 
     @Test
@@ -491,9 +491,9 @@ class PayCommandApplicationServiceTest {
         when(balanceApi.getBalance(payerUuid))
                 .thenReturn(CompletableFuture.completedFuture(dto));
 
-        PayResult result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, receiverName, validAmount).get();
 
-        assertEquals(PayResult.NOT_ENOUGH_FUNDS, result);
+        assertEquals(PayStatus.NOT_ENOUGH_FUNDS, result);
     }
 
     @Test
@@ -520,8 +520,8 @@ class PayCommandApplicationServiceTest {
                         new TransactionResponseDTO(1L, payerUuid, specialUuid, validAmount, Instant.now())
                 ));
 
-        PayResult result = service.execute(payerUuid, payerName, specialName, validAmount).get();
+        PayStatus result = service.execute(payerUuid, payerName, specialName, validAmount).get();
 
-        assertEquals(PayResult.SUCCESS, result);
+        assertEquals(PayStatus.SUCCESS, result);
     }
 }

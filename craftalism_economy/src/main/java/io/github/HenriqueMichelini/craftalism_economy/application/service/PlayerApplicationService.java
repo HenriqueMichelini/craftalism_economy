@@ -79,16 +79,6 @@ public class PlayerApplicationService {
                 });
     }
 
-//    public CompletableFuture<PlayerResponseDTO> getOrCreatePlayer(UUID uuid, String name) {
-//        return api.getPlayerByUuid(uuid)
-//                .exceptionallyCompose(ex -> {
-//                    if (ex instanceof NotFoundException) {
-//                        return api.createPlayer(uuid, name);
-//                    }
-//                    return CompletableFuture.failedFuture(ex);
-//                });
-//    }
-
     public CompletableFuture<Player> getCachedOrFetch(UUID uuid, String name) {
         Optional<Player> cached = cache.find(uuid);
         if (cached.isPresent()) {

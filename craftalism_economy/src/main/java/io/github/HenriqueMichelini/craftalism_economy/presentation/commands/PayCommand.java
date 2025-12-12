@@ -3,8 +3,9 @@ package io.github.HenriqueMichelini.craftalism_economy.presentation.commands;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.CurrencyFormatter;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.PayMessages;
 import io.github.HenriqueMichelini.craftalism_economy.application.service.PayCommandApplicationService;
-import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.PayResult;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.PayStatus;
 import io.github.HenriqueMichelini.craftalism_economy.presentation.validation.PlayerNameCheck;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -81,14 +82,18 @@ public class PayCommand implements CommandExecutor {
         service.execute(player.getUniqueId(), player.getName(), targetName, amount)
                 .thenAccept(result -> {
                     switch (result) {
-                        case PayResult.SUCCESS -> {
+                        case PayStatus.SUCCESS -> {
                             messages.sendPaySuccessSender(player, formatter.formatCurrency(amount), targetName);
-                            messages.sendPaySuccessReceiver(player, formatter.formatCurrency(amount), targetName);
+
+                            Player targetPlayer = Bukkit.getPlayer(targetName);
+                            if (targetPlayer != null && targetPlayer.isOnline()) {
+                                messages.sendPaySuccessReceiver(targetPlayer, formatter.formatCurrency(amount), player.getName());
+                            }
                         }
-                        case PayResult.TARGET_NOT_FOUND -> messages.sendPayPlayerNotFound(player);
-                        case PayResult.NOT_ENOUGH_FUNDS -> messages.sendPayInsufficientFunds(player);
-                        case PayResult.INVALID_AMOUNT -> messages.sendPayInvalidAmount(player);
-                        case PayResult.CANNOT_PAY_SELF -> messages.sendPaySelfPayment(player);
+                        case PayStatus.TARGET_NOT_FOUND -> messages.sendPayPlayerNotFound(player);
+                        case PayStatus.NOT_ENOUGH_FUNDS -> messages.sendPayInsufficientFunds(player);
+                        case PayStatus.INVALID_AMOUNT -> messages.sendPayInvalidAmount(player);
+                        case PayStatus.CANNOT_PAY_SELF -> messages.sendPaySelfPayment(player);
                         default -> messages.sendPayException(player);
                     }
                 });

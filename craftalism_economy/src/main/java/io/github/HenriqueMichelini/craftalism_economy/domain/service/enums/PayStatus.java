@@ -1,6 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.domain.service.enums;
 
-public enum PayResult {
+public enum PayStatus {
     SUCCESS,
     TARGET_NOT_FOUND,
     NOT_ENOUGH_FUNDS,
