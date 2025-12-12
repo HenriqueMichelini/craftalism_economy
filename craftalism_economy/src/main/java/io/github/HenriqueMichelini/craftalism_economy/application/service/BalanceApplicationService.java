@@ -51,16 +51,6 @@ public class BalanceApplicationService {
                 .thenApply(this::toBalance);
     }
 
-//    public CompletableFuture<Balance> getOrCreateBalance(UUID uuid) {
-//        return api.getBalance(uuid)
-//                .exceptionallyCompose(ex ->
-//                        isNotFoundException(ex)
-//                                ? api.createBalance(uuid)
-//                                : CompletableFuture.failedFuture(ex)
-//                )
-//                .thenApply(this::toBalance);
-//    }
-
     public CompletableFuture<Balance> loadBalanceOnJoin(UUID uuid) {
         return getOrCreateBalance(uuid)
                 .thenApply(balance -> {

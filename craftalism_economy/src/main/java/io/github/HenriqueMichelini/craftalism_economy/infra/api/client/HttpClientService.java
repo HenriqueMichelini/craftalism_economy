@@ -42,12 +42,6 @@ public class HttpClientService {
         return send(request(path).PUT(HttpRequest.BodyPublishers.ofString(body)).build(), path);
     }
 
-//    private CompletableFuture<HttpResponse<String>> send(HttpRequest request, String path) {
-//        return withTimeoutHandling(path,
-//                http.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-//        );
-//    }
-
     private CompletableFuture<HttpResponse<String>> send(HttpRequest request, String path) {
         System.out.println("[HttpClient] -> " + request.uri());
         return withTimeoutHandling(path,

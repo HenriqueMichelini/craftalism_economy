@@ -1,5 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.presentation.commands;
 
+import io.github.HenriqueMichelini.craftalism_economy.application.service.TransactionApplicationService;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.CurrencyFormatter;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.PayMessages;
 import io.github.HenriqueMichelini.craftalism_economy.application.service.PayCommandApplicationService;
@@ -18,13 +19,15 @@ public class PayCommand implements CommandExecutor {
     private static final String PERMISSION = "craftalism.pay";
 
     private final PayMessages messages;
-    private final PayCommandApplicationService service;
+    private final PayCommandApplicationService payService;
+    private final TransactionApplicationService transactionService;
     private final PlayerNameCheck playerNameCheck;
     private final CurrencyFormatter formatter;
 
-    public PayCommand(PayMessages messages, PayCommandApplicationService service, PlayerNameCheck playerNameCheck, CurrencyFormatter formatter) {
+    public PayCommand(PayMessages messages, PayCommandApplicationService payService, TransactionApplicationService transactionService, PlayerNameCheck playerNameCheck, CurrencyFormatter formatter) {
         this.messages = messages;
-        this.service = service;
+        this.payService = payService;
+        this.transactionService = transactionService;
         this.playerNameCheck = playerNameCheck;
         this.formatter = formatter;
     }
@@ -79,10 +82,18 @@ public class PayCommand implements CommandExecutor {
             return true;
         }
 
-        service.execute(player.getUniqueId(), player.getName(), targetName, amount)
+        payService.execute(player.getUniqueId(), player.getName(), targetName, amount)
                 .thenAccept(result -> {
-                    switch (result) {
-                        case PayStatus.SUCCESS -> {
+                    switch (result.getStatus()) {
+                        case SUCCESS -> {
+                            result.receiverUuid().ifPresent(receiverUuid ->
+                                    transactionService.registerTransaction(
+                                            player.getUniqueId(),
+                                            receiverUuid,
+                                            amount
+                                    )
+                            );
+
                             messages.sendPaySuccessSender(player, formatter.formatCurrency(amount), targetName);
 
                             Player targetPlayer = Bukkit.getPlayer(targetName);
@@ -90,14 +101,13 @@ public class PayCommand implements CommandExecutor {
                                 messages.sendPaySuccessReceiver(targetPlayer, formatter.formatCurrency(amount), player.getName());
                             }
                         }
-                        case PayStatus.TARGET_NOT_FOUND -> messages.sendPayPlayerNotFound(player);
-                        case PayStatus.NOT_ENOUGH_FUNDS -> messages.sendPayInsufficientFunds(player);
-                        case PayStatus.INVALID_AMOUNT -> messages.sendPayInvalidAmount(player);
-                        case PayStatus.CANNOT_PAY_SELF -> messages.sendPaySelfPayment(player);
+                        case TARGET_NOT_FOUND -> messages.sendPayPlayerNotFound(player);
+                        case NOT_ENOUGH_FUNDS -> messages.sendPayInsufficientFunds(player);
+                        case INVALID_AMOUNT -> messages.sendPayInvalidAmount(player);
+                        case CANNOT_PAY_SELF -> messages.sendPaySelfPayment(player);
                         default -> messages.sendPayException(player);
                     }
                 });
-
 
         return true;
     }

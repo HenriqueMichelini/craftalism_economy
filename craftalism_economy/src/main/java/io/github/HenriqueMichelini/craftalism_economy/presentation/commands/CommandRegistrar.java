@@ -34,6 +34,7 @@ public final class CommandRegistrar {
                 new PayMessages(
                         plugin.getPluginLogger()),
                         apps.getPayCommandApplication(),
+                        apps.getTransactionApplication(),
                         playerNameCheck,
                         formatters.getFormatter()
         ));

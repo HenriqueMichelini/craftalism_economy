@@ -9,6 +9,7 @@ public final class ApplicationServiceFactory {
 
     private final PlayerApplicationService playerApp;
     private final BalanceApplicationService balanceApp;
+    private final TransactionApplicationService transactionApp;
 
     private final PayCommandApplicationService payCmdApp;
     private final BalanceCommandApplicationService balanceCmdApp;
@@ -30,6 +31,8 @@ public final class ApplicationServiceFactory {
                 apis.getBalanceApi(),
                 balanceCache
         );
+
+        this.transactionApp = new TransactionApplicationService(apis.getTransactionApi());
 
         this.payCmdApp = new PayCommandApplicationService(
                 playerApp,
@@ -57,6 +60,7 @@ public final class ApplicationServiceFactory {
 
     public PlayerApplicationService getPlayerApplication() { return playerApp; }
     public BalanceApplicationService getBalanceApplication() { return balanceApp; }
+    public TransactionApplicationService getTransactionApplication() {return transactionApp; }
     public PayCommandApplicationService getPayCommandApplication() { return payCmdApp; }
     public BalanceCommandApplicationService getBalanceCommandApplication() { return balanceCmdApp; }
     public BaltopCommandApplicationService getBaltopCommandApplication() { return baltopCmdApp; }

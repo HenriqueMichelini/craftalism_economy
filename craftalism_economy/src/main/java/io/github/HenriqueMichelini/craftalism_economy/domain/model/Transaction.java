@@ -10,6 +10,16 @@ public class Transaction {
     Long amount;
     Instant createdAt;
 
+    public Transaction() {}
+
+    public Transaction(Long id, UUID fromUuid, UUID toUuid, Long amount, Instant createdAt) {
+        this.id = id;
+        this.fromUuid = fromUuid;
+        this.toUuid = toUuid;
+        this.amount = amount;
+        this.createdAt = createdAt;
+    }
+
     public Long getId() {
         return id;
     }
