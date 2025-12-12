@@ -78,7 +78,7 @@ public class CurrencyFormatter {
 
     public String formatCurrency(long amount) {
         try {
-            BigDecimal displayValue = BigDecimal.valueOf(amount);
+            BigDecimal displayValue = toDisplayValue(amount); // PUT THIS BACK
             NumberFormat fmt = newFormatter();
             return currencySymbol + fmt.format(displayValue);
         } catch (Exception e) {

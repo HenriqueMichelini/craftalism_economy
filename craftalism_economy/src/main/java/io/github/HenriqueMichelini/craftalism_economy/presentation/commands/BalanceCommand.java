@@ -2,6 +2,7 @@ package io.github.HenriqueMichelini.craftalism_economy.presentation.commands;
 
 import io.github.HenriqueMichelini.craftalism_economy.application.dto.BalanceExecutionResult;
 import io.github.HenriqueMichelini.craftalism_economy.application.service.BalanceCommandApplicationService;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.CurrencyFormatter;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.BalanceMessages;
 import io.github.HenriqueMichelini.craftalism_economy.presentation.validation.PlayerNameCheck;
 import org.bukkit.command.Command;
@@ -17,14 +18,18 @@ public class BalanceCommand implements CommandExecutor {
     private final BalanceMessages messages;
     private final PlayerNameCheck playerNameCheck;
     private final BalanceCommandApplicationService balanceService;
+    private final CurrencyFormatter formatter;
 
     public BalanceCommand(
             BalanceMessages messages,
             PlayerNameCheck playerNameCheck,
-            BalanceCommandApplicationService balanceService) {
+            BalanceCommandApplicationService balanceService,
+            CurrencyFormatter formatter
+    ) {
         this.messages = messages;
         this.playerNameCheck = playerNameCheck;
         this.balanceService = balanceService;
+        this.formatter = formatter;
     }
 
     @Override
@@ -79,10 +84,10 @@ public class BalanceCommand implements CommandExecutor {
     private void handleResult(Player sender, BalanceExecutionResult result, String targetName) {
         switch (result.status()) {
             case SUCCESS_SELF ->
-                    messages.sendBalanceSelfSuccess(sender, String.valueOf(result.amount()));
+                    messages.sendBalanceSelfSuccess(sender, formatter.formatCurrency(result.amount()));
 
             case SUCCESS_OTHER ->
-                    messages.sendBalanceOtherSuccess(sender, targetName, String.valueOf(result.amount()));
+                    messages.sendBalanceOtherSuccess(sender, targetName, formatter.formatCurrency(result.amount()));
 
             case NO_BALANCE ->
                     messages.sendBalanceOtherNoBalance(sender, targetName);

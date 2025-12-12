@@ -1,5 +1,6 @@
 package io.github.HenriqueMichelini.craftalism_economy.presentation.commands;
 
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.CurrencyFormatter;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.PayMessages;
 import io.github.HenriqueMichelini.craftalism_economy.application.service.PayCommandApplicationService;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.enums.PayResult;
@@ -10,17 +11,21 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
+
 public class PayCommand implements CommandExecutor {
     private static final String PERMISSION = "craftalism.pay";
 
     private final PayMessages messages;
     private final PayCommandApplicationService service;
     private final PlayerNameCheck playerNameCheck;
+    private final CurrencyFormatter formatter;
 
-    public PayCommand(PayMessages messages, PayCommandApplicationService service, PlayerNameCheck playerNameCheck) {
+    public PayCommand(PayMessages messages, PayCommandApplicationService service, PlayerNameCheck playerNameCheck, CurrencyFormatter formatter) {
         this.messages = messages;
         this.service = service;
         this.playerNameCheck = playerNameCheck;
+        this.formatter = formatter;
     }
 
     @Override
@@ -54,13 +59,19 @@ public class PayCommand implements CommandExecutor {
             return true;
         }
 
-        if (!amountStr.matches("\\d+")) {
+        if (!amountStr.matches("\\d+(\\.\\d{1,4})?")) {
             messages.sendPayInvalidAmount(player);
             return true;
         }
 
-
-        long amount = Long.parseLong(amountStr);
+        long amount;
+        try {
+            BigDecimal displayAmount = new BigDecimal(amountStr);
+            amount = formatter.fromDisplayValue(displayAmount);
+        } catch (NumberFormatException e) {
+            messages.sendPayInvalidAmount(player);
+            return true;
+        }
 
         if (targetName.equalsIgnoreCase(player.getName())) {
             messages.sendPaySelfPayment(player);
@@ -71,8 +82,8 @@ public class PayCommand implements CommandExecutor {
                 .thenAccept(result -> {
                     switch (result) {
                         case PayResult.SUCCESS -> {
-                            messages.sendPaySuccessSender(player, amountStr, targetName);
-                            messages.sendPaySuccessReceiver(player, amountStr, targetName);
+                            messages.sendPaySuccessSender(player, formatter.formatCurrency(amount), targetName);
+                            messages.sendPaySuccessReceiver(player, formatter.formatCurrency(amount), targetName);
                         }
                         case PayResult.TARGET_NOT_FOUND -> messages.sendPayPlayerNotFound(player);
                         case PayResult.NOT_ENOUGH_FUNDS -> messages.sendPayInsufficientFunds(player);

@@ -2,6 +2,7 @@ package io.github.HenriqueMichelini.craftalism_economy.presentation.commands;
 
 import io.github.HenriqueMichelini.craftalism_economy.application.dto.BalanceExecutionResult;
 import io.github.HenriqueMichelini.craftalism_economy.application.service.BalanceCommandApplicationService;
+import io.github.HenriqueMichelini.craftalism_economy.domain.service.currency.CurrencyFormatter;
 import io.github.HenriqueMichelini.craftalism_economy.domain.service.logs.messages.BalanceMessages;
 import io.github.HenriqueMichelini.craftalism_economy.presentation.validation.PlayerNameCheck;
 import org.bukkit.command.Command;
@@ -23,6 +24,7 @@ class BalanceCommandTest {
     @Mock private BalanceMessages messages;
     @Mock private PlayerNameCheck playerNameCheck;
     @Mock private BalanceCommandApplicationService balanceService;
+    @Mock private CurrencyFormatter formatter;
     @Mock private Player player;
     @Mock private ConsoleCommandSender console;
     @Mock private Command command;
@@ -35,7 +37,7 @@ class BalanceCommandTest {
     @BeforeEach
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
-        balanceCommand = new BalanceCommand(messages, playerNameCheck, balanceService);
+        balanceCommand = new BalanceCommand(messages, playerNameCheck, balanceService, formatter);
         when(player.getUniqueId()).thenReturn(playerUuid);
         when(player.getName()).thenReturn("TestPlayer");
 

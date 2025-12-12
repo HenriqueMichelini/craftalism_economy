@@ -34,13 +34,15 @@ public final class CommandRegistrar {
                 new PayMessages(
                         plugin.getPluginLogger()),
                         apps.getPayCommandApplication(),
-                        playerNameCheck
+                        playerNameCheck,
+                        formatters.getFormatter()
         ));
         register("balance", new BalanceCommand(
                 new BalanceMessages(
                         plugin.getPluginLogger()),
                         playerNameCheck,
-                        apps.getBalanceCommandApplication()
+                        apps.getBalanceCommandApplication(),
+                        formatters.getFormatter()
         ));
         register("baltop", new BaltopCommand(
                 new BaltopMessages(
